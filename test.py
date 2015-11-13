@@ -9,7 +9,7 @@ with open('pysecrets.json') as jsonfile:
 
 dictionaryApiKey = data["dictionary"]  # api key for dictionary
 
-s = "multiple"
+s = "dinosaur"
 sCount = s.split()  # get number of words by splitting on spaces
 
 random.seed(time.time())
@@ -21,5 +21,8 @@ link = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + chosen
 tree = ET.parse(urllib.urlopen(link))
 root = tree.getroot()
 
-for test in root.iter('hw'):
-    print test.text
+
+# for test in root.iter('hw'):
+#    print test.text
+
+print root[0][2].text
