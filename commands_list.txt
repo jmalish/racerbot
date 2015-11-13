@@ -1,0 +1,12 @@
+help
+dickify (random and called)
+setdickify
+setdickifytimer
+get time since dicking
+wolfram alpha
+cleverbot
+subreddit
+get title of website
+get title of youtube (youtube.com and youtu.be)
+streamers
+.send

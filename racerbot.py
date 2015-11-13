@@ -1,6 +1,8 @@
 # Imports
 import socket
 import time
+import random
+import json
 
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"
@@ -10,37 +12,56 @@ channel = "#racerbottestroom"  # test room, uncomment next line to overwrite thi
 botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+with open('secrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
+    data = json.load(jsonfile)
+
+dictionaryApiKey = data["dictionary"]  # api key for dictionary
+wolframApiKey = data["wolfram"]  # api key for wolfram alpha
+youtubeApiKey = data["youtube"]  # api key for youtube
+
 # <editor-fold desc="Basic Functions">
-# joins channels
-def joinchan(chan):
+
+
+def joinchan(chan):  # joins channels
     ircsock.send("JOIN " + chan +"\n")
     print "Joining " + chan
 
-# responds to pings from server
-def ping():
+
+def ping():  # responds to pings from server
     ircsock.send("PONG :Pong\n")
     print "PONG!"
 
-# funtion to send message, a little easier than typing ircsocket over and over
-def sendMsg(message):
+
+def sendmsg(message):  # function to send message, a little easier than typing ircsocket over and over
     now = time.strftime("%I:%M:%S")
-    ircsock.send('PRIVMSG %s: %s\r\n' % (channel, message))
+    ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
     print "%s: I sent: %s" % (now, message)
 # </editor-fold desc="Basic Functions">
 
 # </editor-fold desc="Commands">
+
+
 def commands(nick, channel, message):
+    random.seed(time.time())
+    randomInt = random.randint(0, 30)
+    if randomInt == 30:
+        pass
     if message.find(".here") != -1:  # checks if bot is listening to us
-        sendMsg("Yup!")
+        sendmsg("Yup!")
+
+
+def dickify(word):
+    return "test"
+
 # </editor-fold desc="Commands">
 
 
 # <editor-fold desc="Bot">
 # setting up socket
-ircsock.connect((server, port))  # Here we connect to the server using port 6667
+ircsock.connect((server, port))  # Connect to the server using provided port
 ircsock.send("USER " + botnick + " " + botnick + " " + botnick + " Created by racer0940\n")  # user authentication
 print "Authenticating"
-ircsock.send("NICK " + botnick + "\n")  # here we actually assign the nick to the bot
+ircsock.send("NICK " + botnick + "\n")  # assign the nick to the bot
 print "Assigning name"
 
 joinchan(channel)  # initial channel join
@@ -60,10 +81,5 @@ while True:  # this is the actual bot itself, everything in this block is what t
         message = ircmsg.split(' :')[-1]
 
         commands(nick, channel, message)
+
 # </editor-fold desc="Bot">
-
-# example message in channel (what shows up in the console):
-# :racer0940!sid15960@gateway/web/irccloud.com/x-gigiyhibuoxitvuf PRIVMSG #racerbottestroom :test
-
-# example of PM to bot
-# :racer0940!sid15960@gateway/web/irccloud.com/x-gigiyhibuoxitvuf PRIVMSG racerbot_py :test
