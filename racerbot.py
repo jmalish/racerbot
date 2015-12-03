@@ -18,7 +18,7 @@ botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
-with open('secrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
+with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     data = json.load(jsonfile)
 
 dictionaryApiKey = data["dictionary"]   # api key for dictionary
@@ -26,7 +26,8 @@ wolframApiKey = data["wolfram"]         # api key for wolfram alpha
 youtubeApiKey = data["youtube"]         # api key for youtube
 
 # other variables
-fish = {"fish"}     # used in fishify()
+joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
+fish = "fish"       # used in fishify()
 fishTimer = 300     # used to keep fishify from running every other message (default is 5 min)
 fishClock = 999     # used to see how long it's been since last fishify
 
@@ -37,6 +38,8 @@ fishClock = 999     # used to see how long it's been since last fishify
 def joinchan(chan):  # joins channels
     ircsock.send("JOIN " + chan + "\n")
     print "Joining " + chan
+    global joined
+    joined = True
 
 
 def ping():  # responds to pings from server
@@ -53,6 +56,10 @@ def sendmsg(message):  # function to send message, a little easier than typing i
 
 
 def commands(nick, channel, message):
+    global fish
+    global fishTimer
+    global fishClock
+
     random.seed(time.time())
     randomInt = random.randint(0, 30)
     if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
@@ -61,7 +68,6 @@ def commands(nick, channel, message):
             try:
                 fishify(message)  # send the chosen word to fishify()
                 # get current time, if the fishify was successful, this says when the last time it was run
-                global fishClock
                 fishClock = calendar.timegm(time.gmtime())
             except Exception as e:
                 print "Error in random fishify: " + e.message
@@ -71,17 +77,15 @@ def commands(nick, channel, message):
     elif message.lower().startswith(".fishify"):
         fishify(message)
     elif message.lower().startswith(".setfishifytimer"):
-        global fishTimer
         fishTimer = message.split()[1] * 60
-        sendmsg("Fish timer now set to " + fishTimer + " minutes")
+        sendmsg("Fish timer now set to " + str(fishTimer) + " minutes")
     elif message.lower().startswith(".getfishifytimer"):
-        sendmsg("Fish timer is set at " + fishTimer + " minutes")
+        sendmsg("Fish timer is set at " + str(fishTimer) + " minutes")
     elif message.lower().startswith(".timesincefish"):
         timeNow = calendar.timegm(time.gmtime())
         timeSinceFish = timeNow - fishClock
         sendmsg("Time since last fishing: " + timeSinceFish)
     elif message.lower().startswith(".setfishify"):
-        global fish
         fish = message.split()[1]
 
 
@@ -90,8 +94,9 @@ def fishify(sentence):  # takes a word and changes the syllable to a given word
         words = sentence.split()  # get number of words by splitting on spaces
 
         random.seed(time.time())  # set seed for random
-        randomIntWord = random.randint(0, len(words) - 1)  # generate a random integer to select word
+        randomIntWord = random.randint(1, len(words) - 1)  # generate a random integer to select word
         chosenWord = words[randomIntWord]  # get the word that correlates to the random integer (location in array)
+        print (chosenWord + " chosen to fishify")
 
         dictLink = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + \
                    chosenWord + "?key=" + dictionaryApiKey
@@ -112,7 +117,7 @@ def fishify(sentence):  # takes a word and changes the syllable to a given word
 
         newSentence = ""
         for i in range(len(words)):
-            newSentence += words + " "
+            newSentence += words[i] + " "
 
         sendmsg(newSentence)
     except Exception as e:  # catch if the selected word doesn't exist in the dictionary
