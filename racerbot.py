@@ -1,15 +1,17 @@
 # Imports
 import socket
 import time
+import calendar
 import random
 import json
 import urllib
 import xml.etree.ElementTree as ET
+import sys
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
-server = "irc.freenode.net"
-port = 6667
+server = "irc.freenode.net"     # irc server
+port = 6667                     # irc port
 channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 # channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
 botnick = "racerbot_py"
@@ -19,12 +21,14 @@ ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 with open('secrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     data = json.load(jsonfile)
 
-dictionaryApiKey = data["dictionary"]  # api key for dictionary
-wolframApiKey = data["wolfram"]  # api key for wolfram alpha
-youtubeApiKey = data["youtube"]  # api key for youtube
+dictionaryApiKey = data["dictionary"]   # api key for dictionary
+wolframApiKey = data["wolfram"]         # api key for wolfram alpha
+youtubeApiKey = data["youtube"]         # api key for youtube
 
 # other variables
-fish = "fish"  # used in fishify()
+fish = {"fish"}     # used in fishify()
+fishTimer = 300     # used to keep fishify from running every other message (default is 5 min)
+fishClock = 999     # used to see how long it's been since last fishify
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -52,33 +56,68 @@ def commands(nick, channel, message):
     random.seed(time.time())
     randomInt = random.randint(0, 30)
     if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
-        fishify(message)  # send the chosen word to fishify()
+        timeNow = calendar.timegm(time.gmtime())
+        if (timeNow - fishClock) > fishTimer:
+            try:
+                fishify(message)  # send the chosen word to fishify()
+                # get current time, if the fishify was successful, this says when the last time it was run
+                global fishClock
+                fishClock = calendar.timegm(time.gmtime())
+            except Exception as e:
+                print "Error in random fishify: " + e.message
 
-    if message.find(".here") != -1:  # checks if bot is listening to us
+    if message.lower().find(".here") != -1:  # checks if bot is listening to us
         sendmsg("Yup!")
-    elif message.startswith(".fishify"):
+    elif message.lower().startswith(".fishify"):
         fishify(message)
-    elif message.startswith(".setfishify"):
+    elif message.lower().startswith(".setfishifytimer"):
+        global fishTimer
+        fishTimer = message.split()[1] * 60
+        sendmsg("Fish timer now set to " + fishTimer + " minutes")
+    elif message.lower().startswith(".getfishifytimer"):
+        sendmsg("Fish timer is set at " + fishTimer + " minutes")
+    elif message.lower().startswith(".timesincefish"):
+        timeNow = calendar.timegm(time.gmtime())
+        timeSinceFish = timeNow - fishClock
+        sendmsg("Time since last fishing: " + timeSinceFish)
+    elif message.lower().startswith(".setfishify"):
+        global fish
         fish = message.split()[1]
 
 
 def fishify(sentence):  # takes a word and changes the syllable to a given word
     try:
-        word_count = sentence.split()  # get number of words by splitting on spaces
+        words = sentence.split()  # get number of words by splitting on spaces
 
         random.seed(time.time())  # set seed for random
-        randomInt = random.randint(0, len(word_count) - 1)  # generate a random integer
-        chosenWord = word_count[randomInt]  # get the word that correlates to the random integer (location in array)
+        randomIntWord = random.randint(0, len(words) - 1)  # generate a random integer to select word
+        chosenWord = words[randomIntWord]  # get the word that correlates to the random integer (location in array)
 
-        dictLink = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + chosenWord + "?key=" + dictionaryApiKey
+        dictLink = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + \
+                   chosenWord + "?key=" + dictionaryApiKey
 
         tree = ET.parse(urllib.urlopen(dictLink))
         root = tree.getroot()
 
-        syllables = root[0][2].text.split('*')  # TODO: replace syllable with given word, replace word back in sentence
-    except IndexError:  # catch if the selected word doesn't exist in the dictionary
+        syllables = root[0][2].text.split('*')  # split word into syllables
+        randomIntSyl = random.randint(0, len(syllables) - 1)  # generate a random integer to select syllable
+
+        syllables[randomIntSyl] = fish  # replace syllable with fishify word
+
+        newWord = ""
+        for i in range(len(syllables)):
+            newWord += syllables[i]
+
+        words[randomIntWord] = newWord
+
+        newSentence = ""
+        for i in range(len(words)):
+            newSentence += words + " "
+
+        sendmsg(newSentence)
+    except Exception as e:  # catch if the selected word doesn't exist in the dictionary
         sendmsg("You want me to do what...")
-        print "Error in fishify()"
+        print "Error in fishify(): " + e.message
 
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
@@ -106,5 +145,4 @@ while True:  # this is the actual bot itself, everything in this block is what t
         message = ircmsg.split(' :')[-1]
 
         commands(nick, channel, message)
-
 # </editor-fold desc="Bot">
