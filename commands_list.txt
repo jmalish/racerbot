@@ -1,12 +1,12 @@
-help
-fishify (random and called)
-setfishify
-setfishifytimer
-get time since fishing
-wolfram alpha
-cleverbot
-subreddit
-get title of website
-get title of youtube (youtube.com and youtu.be)
-streamers
-.send
+    help
+x    fishify (random and called)
+x    setfishify
+x    setfishifytimer
+x    get time since fishing
+    wolfram alpha
+    cleverbot
+    subreddit
+    get title of website
+    get title of youtube (youtube.com and youtu.be)
+    streamers
+    .send
