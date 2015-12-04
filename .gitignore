@@ -1,3 +1,4 @@
 .idea
 pysecrets.json
 test.py
+*.pyc
