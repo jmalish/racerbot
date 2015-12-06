@@ -4,10 +4,9 @@ import time
 import calendar
 import random
 import json
-import urllib
-import xml.etree.ElementTree as ET
-import sys
 import fishify
+import re
+import praw
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -27,7 +26,7 @@ youtubeApiKey = data["youtube"]         # api key for youtube
 
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
-
+reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -64,6 +63,7 @@ def commands(nick, channel, message):
                 except Exception as e:
                     print "Error in random fishify: " + e.message
 
+    # this block is all the "dot" commands, where something is requested from the bot by a user
     if message.lower().find(".here") != -1:  # checks if bot is listening to us
         sendmsg("Yup!")
     elif message.lower().startswith(".fishify"):
@@ -77,50 +77,16 @@ def commands(nick, channel, message):
     elif message.lower().startswith(".setfishify"):
         fishify.fishWord = message.split()[1]
 
-# # commented out for now, moved to own module, keeping for safety sake atm
-# def fishify(sentence):  # takes a word and changes the syllable to a given word
-#     for i in range(0, 5):  # let the bot try five times to find a word, this is so it doesn't give up on first try
-#         try:
-#             words = sentence.split()  # get number of words by splitting on spaces
-#
-#             random.seed(time.time())  # set seed for random
-#             randomIntWord = random.randint(1, len(words) - 1)  # generate a random integer to select word
-#            chosenWord = words[randomIntWord]  # get the word that correlates to the random integer (location in array)
-#             print ("I chose '" + chosenWord + "' to fishify")
-#
-#             dictLink = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + \
-#                        chosenWord + "?key=" + dictionaryApiKey
-#
-#             tree = ET.parse(urllib.urlopen(dictLink))
-#             root = tree.getroot()
-#
-#             syllables = root[0].find("hw").text.split('*')  # split word into syllables
-#             randomIntSyl = random.randint(0, len(syllables) - 1)  # generate a random integer to select syllable
-#
-#             syllables[randomIntSyl] = fish  # replace syllable with fishify word
-#
-#             newWord = ""
-#             for i in range(len(syllables)):
-#                 newWord += syllables[i]
-#
-#             words[randomIntWord] = newWord
-#
-#             newSentence = ""
-#             for i in range(len(words)):
-#                 if words[i] == ".fishify":
-#                     pass  # if the first word is the command to fishify, we don't want to add it to the sentence
-#                 else:
-#                     newSentence += words[i] + " "
-#
-#             sendmsg(newSentence)
-#             break
-#         except Exception as e:  # catch if the selected word doesn't exist in the dictionary
-#             i += 1
-#             if i == 5:
-#                 # if it tried all five times and failed, tell chat what happened
-#                 sendmsg("I'm pretty sure none of those are words... I looked in the dictionary and everything!")
-#                 print "Error in fishify(): " + e.message
-
+    # search for subreddits (r/example)
+    regexSearch = re.findall("r/[a-z0-9_]+", message, flags=re.IGNORECASE)
+    if regexSearch:  # if this is true, we found a subreddit name
+        for sub in regexSearch:  # for each subreddit mentioned, print
+            subreddit_name = sub.split("r/")[1]  # this contains the subreddit name
+            try:
+                subreddit_title = reddit.get_subreddit(subreddit_name).title
+                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
+            except:
+                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
 # setting up socket

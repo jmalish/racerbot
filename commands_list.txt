@@ -5,7 +5,7 @@ x    setfishifytimer
 x    get time since fishing
     wolfram alpha
     cleverbot
-    subreddit
+x    subreddit
     get title of website
     get title of youtube (youtube.com and youtu.be)
     streamers
