@@ -7,3 +7,5 @@ racerbot is written in Python 2.7, running it with 3.0 and up will cause issues
 
 ###Dependencies: (I used "pip install \<dependency\>")
   - PRAW (reddit api)
+  - BeautifulSoup4
+  - requests

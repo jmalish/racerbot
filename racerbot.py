@@ -7,6 +7,8 @@ import json
 import fishify
 import re
 import praw
+import requests
+from bs4 import BeautifulSoup as BS
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -48,6 +50,15 @@ def sendmsg(message):  # function to send message, a little easier than typing i
     now = time.strftime("%I:%M:%S")
     ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
     print "%s: I sent: %s" % (now, message)
+
+
+def get_page_title(site):  # TODO: Make this use GETs instead of POST
+    try:
+        r = requests.get(site, headers={'user-agent': 'roboracer'})
+        html = BS(r.text, "html.parser")
+        return html.title.text
+    except Exception:
+        pass  # do nothing, it's probably a fake website
 # </editor-fold desc="Basic Functions">
 # </editor-fold desc="Commands">
 
@@ -78,7 +89,7 @@ def commands(nick, channel, message):
         fishify.fishWord = message.split()[1]
 
     # search for subreddits (r/example)
-    regexSearch = re.findall("r/[a-z0-9_]+", message, flags=re.IGNORECASE)
+    regexSearch = re.findall("[r][/][a-z0-9_]+", message, flags=re.IGNORECASE)
     if regexSearch:  # if this is true, we found a subreddit name
         for sub in regexSearch:  # for each subreddit mentioned, print
             subreddit_name = sub.split("r/")[1]  # this contains the subreddit name
@@ -87,6 +98,13 @@ def commands(nick, channel, message):
                 sendmsg("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
             except:
                 sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+
+    if message.find("www.") | message.find("http://"):
+        for word in message.split():
+            if "http" in word:
+                sendmsg(get_page_title(word))
+            elif "www." in word:
+                sendmsg(get_page_title("http://" + word))
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
 # setting up socket
