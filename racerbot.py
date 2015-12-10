@@ -8,7 +8,7 @@ import fishify
 import re
 import praw
 import requests
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup as Bs
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -55,7 +55,7 @@ def sendmsg(message):  # function to send message, a little easier than typing i
 def get_page_title(site):  # TODO: Make this use GETs instead of POST
     try:
         r = requests.get(site, headers={'user-agent': 'roboracer'})
-        html = BS(r.text, "html.parser")
+        html = Bs(r.text, "html.parser")
         return html.title.text
     except Exception:
         pass  # do nothing, it's probably a fake website
@@ -72,7 +72,7 @@ def commands(nick, channel, message):
                 try:
                     sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
                 except Exception as e:
-                    print "Error in random fishify: " + e.message
+                    print "Error in random fishify: " + e
 
     # this block is all the "dot" commands, where something is requested from the bot by a user
     if message.lower().find(".here") != -1:  # checks if bot is listening to us
@@ -89,15 +89,24 @@ def commands(nick, channel, message):
         fishify.fishWord = message.split()[1]
 
     # search for subreddits (r/example)
-    regexSearch = re.findall("[r][/][a-z0-9_]+", message, flags=re.IGNORECASE)
-    if regexSearch:  # if this is true, we found a subreddit name
-        for sub in regexSearch:  # for each subreddit mentioned, print
-            subreddit_name = sub.split("r/")[1]  # this contains the subreddit name
-            try:
-                subreddit_title = reddit.get_subreddit(subreddit_name).title
-                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
-            except:
-                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+    subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+    if subreddit_regex:  # if this is true, we found a subreddit name
+        for result in subreddit_regex:
+            if result[1]:  # if result[1] has something in it, that means we have a comments link
+                thread_id = result[2]  # get thread ID from regex group 3
+                try:
+                    thread_info = reddit.get_submission(submission_id=thread_id)
+                    sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
+                except Exception as e:
+                    print e
+            else:  # if not, it's just a subreddit
+                subreddit_name = result[0]  # get subreddit name from regex group 1
+                try:
+                    subreddit_title = reddit.get_subreddit(subreddit_name).title
+                    print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
+                except Exception as e:
+                    sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+                    print e
 
     if message.find("www.") | message.find("http://"):
         for word in message.split():

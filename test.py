@@ -3,23 +3,21 @@ import re
 
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 
-message = "this is cool: https://www.reddit.com/r/iRacing/comments/3vmdc2/i_want_to_feel_the_engine_any_way_to_manually/"
+message = "https://www.reddit.com/r/videos/comments/3w8e6u/star_wars_battlefront_real_life_mod/"
 
-regexSearch = re.findall("[r][/][a-z0-9_]+", message, flags=re.IGNORECASE)
-if regexSearch:  # if this is true, we found a subreddit name
-    # now we want to see if this is a thread, instead of a whole subreddit
-    regex_search2 = re.findall("[/]comments[/][a-z0-9]+[/]", message, flags=re.IGNORECASE)
-    if regex_search2:  # if this is true, a thread was linked
-        for thread in regex_search2:
-            thread_id = thread.split("comments/")[1].strip("/")  # get rid of "comments/" and the trailing "/"
+# looks for subreddits, regex looks for something similar to 'r/subreddit' and strips off the 'r/'
+subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+if subreddit_regex:  # if this is true, we found a subreddit name
+    for result in subreddit_regex:
+        if result[1]:  # if result[1] has something in it, that means we have a comments link
+            thread_id = result[2]  # get thread ID from regex group 3
             try:
                 thread_info = reddit.get_submission(submission_id=thread_id)
-                print str(thread_info.title) + " - " + str(thread_info.subreddit)
+                print str(thread_info.title) + " | " + str(thread_info.subreddit)
             except Exception as e:
                 print e
-    else:  # otherwise, only a subreddit was mentioned
-        for sub in regexSearch:  # for each subreddit mentioned, print
-            subreddit_name = sub.split("r/")[1]  # this contains the subreddit name
+        else:  # if not, it's just a subreddit
+            subreddit_name = result[0]  # get subreddit name from regex group 1
             try:
                 subreddit_title = reddit.get_subreddit(subreddit_name).title
                 print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
