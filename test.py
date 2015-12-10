@@ -1,26 +1,27 @@
-import praw
 import re
+from bs4 import BeautifulSoup as Bs
+import requests
 
-reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
+message = "google.com, and http://www.twitch.tv/directory/following"
 
-message = "https://www.reddit.com/r/videos/comments/3w8e6u/star_wars_battlefront_real_life_mod/"
 
-# looks for subreddits, regex looks for something similar to 'r/subreddit' and strips off the 'r/'
-subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-if subreddit_regex:  # if this is true, we found a subreddit name
-    for result in subreddit_regex:
-        if result[1]:  # if result[1] has something in it, that means we have a comments link
-            thread_id = result[2]  # get thread ID from regex group 3
-            try:
-                thread_info = reddit.get_submission(submission_id=thread_id)
-                print str(thread_info.title) + " | " + str(thread_info.subreddit)
-            except Exception as e:
-                print e
-        else:  # if not, it's just a subreddit
-            subreddit_name = result[0]  # get subreddit name from regex group 1
-            try:
-                subreddit_title = reddit.get_subreddit(subreddit_name).title
-                print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
-            except Exception as e:
-                print ("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
-                print e
+def get_page_title(site):  # TODO: Make this use GETs instead of POST
+    try:
+        r = requests.get(site, headers={'user-agent': 'roboracer'})
+        html = Bs(r.text, "html.parser")
+        return html.title.text
+    except:
+        pass  # do nothing, it's probably a fake website
+
+url_regex = re.findall("[a-zA-Z0-9\-\.]+\.(com|org|net|mil|edu|de|co|tv)+", message, flags=re.IGNORECASE)
+# here, we're just seeing if the message even contains a url, not concerned with whole url yet
+if url_regex:  # if this is true, the message has a url in it
+    for word in message.split():
+        if "reddit" in word:
+            pass  # reddit stuff is already being taken care of, no need to get it here
+        elif ("com" or "org" or "net" or "mil" or "edu" or "de" or "co" or "tv") in word:  # find 'words' with a common TLD
+            url = word.strip(',')  # get rid of any trailing commas
+            print url
+            # TODO: check for status with   requests.status_code
+        else:
+            print "!" + word  # for debugging only
