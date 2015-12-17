@@ -7,6 +7,6 @@ x    get time since fishing
     cleverbot
 x    subreddit
 x    get title of website
-    get title of youtube (youtube.com and youtu.be)
+x    get title of youtube (youtube.com and youtu.be)
     streamers
     .send

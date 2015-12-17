@@ -22,10 +22,10 @@ ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
-    data = json.load(jsonfile)
+    secrets = json.load(jsonfile)
 
-wolframApiKey = data["wolfram"]         # api key for wolfram alpha
-youtubeApiKey = data["youtube"]         # api key for youtube
+wolframApiKey = secrets["wolfram"]         # api key for wolfram alpha
+youtubeApiKey = secrets["youtube"]         # api key for youtube
 
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
@@ -71,6 +71,20 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
     except Exception, e:
         print e
         return False
+
+
+def get_yt_video_info(video_id):  # get video info of youtube video
+    try:
+        # URL to get info for video
+        api_url = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + \
+                  "&key=" + youtubeApiKey + "%20&part=snippet,statistics"
+        video_details = requests.get(api_url)  # retrieve the JSON from Google's API
+        vid_title = video_details.json()["items"][0]["snippet"]["title"]  # get title of video
+        vid_channel = video_details.json()["items"][0]["snippet"]["channelTitle"]  # get channel of video
+        vid_view_count = video_details.json()["items"][0]["statistics"]["viewCount"]  # get view count of video
+        return "Title: %s | Views: %s | Channel: %s" % (vid_title, vid_view_count, vid_channel)
+    except Exception, e:
+        print e
 # </editor-fold desc="Basic Functions">
 # </editor-fold desc="Commands">
 
@@ -83,7 +97,7 @@ def commands(nick, channel, message):
             if fishify.timerCheck():
                 try:
                     sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
-                except Exception as e:
+                except Exception, e:
                     print "Error in random fishify: " + e
 
     # this block is all the "dot" commands, where something is requested from the bot by a user
@@ -100,6 +114,7 @@ def commands(nick, channel, message):
     elif message.lower().startswith(".setfishify"):
         fishify.fishWord = message.split()[1]
 
+    # ~~~~~~~~ REDDIT
     # search for subreddits (r/example)
     subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
     if subreddit_regex:  # if this is true, we found a subreddit name
@@ -120,6 +135,7 @@ def commands(nick, channel, message):
                     sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
                     print e
 
+    # ~~~~~~~~ WEBSITE TITLES
     # search for websites
     url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
     # here, we're just seeing if the message even contains a url, not concerned with whole url yet
@@ -134,7 +150,16 @@ def commands(nick, channel, message):
                 if "@" not in word:  # ignore emails
                     title = get_page_title(word)
                     if title:
-                        print title
+                        sendmsg(title)
+
+    # ~~~~~~~~ YOUTUBE
+    # regex to get youtube ID, this might need to be cleaned up
+    # will not see links that have an argument before the video id argument (ie ?t=)
+    regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
+    if regex_youtube:  # if we find a youtube link
+        for id in regex_youtube:  # foreach youtube link in message
+            sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
 # setting up socket
