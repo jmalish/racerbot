@@ -18,8 +18,8 @@ import cleverbot
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-# channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
 botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -206,7 +206,8 @@ def commands(nick, channel, message):
         if url_regex:  # if this is true, the message has a url in it
             for word in message.split():
                 word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
-                if ("reddit" in word) or ("twitch" in word) or ("youtube" in word) or ("freenode" in word):
+                if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
+                        or ("youtu.be" in word) or ("freenode" in word):
                     # reddit, twitch, and youtube stuff is already being taken care of
                     # no need to get it here
                     # freenode server pings bot every so often, he really wants to get the title of those too
