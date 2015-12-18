@@ -18,8 +18,8 @@ import cleverbot
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+# hannel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
 botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -110,16 +110,16 @@ def query_wolfram_alpha(query):
                 wolfram_output_title = root[1].attrib["title"]
                 wolfram_output_text = root[1][0][0].text
                 # put all that stuff into a json string
-                wolfram_json = json.dumps({"input_title": wolfram_input_title.encode('utf-8'),
-                                           "input_text": wolfram_input_text.encode('utf-8'),
-                                           "output_title": wolfram_output_title.encode('utf-8'),
-                                           "output_text": wolfram_output_text.encode('utf-8'),
+                wolfram_json = json.dumps({"input_title": str(wolfram_input_title),
+                                           "input_text": str(wolfram_input_text),
+                                           "output_title": str(wolfram_output_title),
+                                           "output_text": str(wolfram_output_text),
                                            "isSuggestion": False})
                 # send that json string back
                 return wolfram_json
             else:  # if not, give user wolfram's suggestion
                 # print "we're here"
-                wolfram_json = json.dumps({"suggestion": root[0][0].text.encode('utf-8'),
+                wolfram_json = json.dumps({"suggestion": str(root[0][0].text),
                                            "isSuggestion": True})
                 return wolfram_json
         else:
