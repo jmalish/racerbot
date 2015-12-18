@@ -3,7 +3,7 @@ x    fishify (random and called)
 x    setfishify
 x    setfishifytimer
 x    get time since fishing
-    wolfram alpha
+x    wolfram alpha
     cleverbot
 x    subreddit
 x    get title of website

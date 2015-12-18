@@ -9,7 +9,8 @@ import re
 import praw
 import requests
 from requests.exceptions import ConnectionError
-from bs4 import BeautifulSoup as Bs
+from bs4 import BeautifulSoup
+import urllib
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -24,7 +25,7 @@ ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     secrets = json.load(jsonfile)
 
-wolframApiKey = secrets["wolfram"]         # api key for wolfram alpha
+wolfram_api_key = secrets["wolfram"]         # api key for wolfram alpha
 youtubeApiKey = secrets["youtube"]         # api key for youtube
 
 # other variables
@@ -60,12 +61,12 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
 
         r = requests.get(site, headers={'user-agent': 'roboracer'})
         if r.status_code == 200:
-            html = Bs(r.text, "html.parser")
+            html = BeautifulSoup(r.text, "html.parser")
             return html.title.text.encode('utf-8').strip()
         else:
             print "Unable to reach " + site + ": " + r.status_code
             pass  # we got a 404 page or something
-    except ConnectionError as c:
+    except ConnectionError:
         print "Connection Error: " + site
         return False
     except Exception, e:
@@ -85,6 +86,39 @@ def get_yt_video_info(video_id):  # get video info of youtube video
         return "Title: %s | Views: %s | Channel: %s" % (vid_title, vid_view_count, vid_channel)
     except Exception, e:
         print e
+
+
+def query_wolfram_alpha(query):
+    query = urllib.quote(query)  # convert string to url safe string
+    try:
+        api_url = "http://api.wolframalpha.com/v2/query?appid=%s&input=%s&format=plaintext" % \
+                  (wolfram_api_key, query)
+        wolfram_response = requests.get(api_url).text.encode('utf-8').strip()
+
+        root = Etree.fromstring(wolfram_response)
+
+        if root.attrib["success"]:
+            if int(root.attrib["numpods"]) > 0:  # make sure the query actually has something to show
+                # get all the stuff we want
+                wolfram_input_title = root[0].attrib["title"]
+                wolfram_input_text = root[0][0][0].text
+                wolfram_output_title = root[1].attrib["title"]
+                wolfram_output_text = root[1][0][0].text
+                # put all that stuff into a json string
+                wolfram_json = json.dumps({"input_title": wolfram_input_title, "input_text": wolfram_input_text,
+                                           "output_title": wolfram_output_title, "output_text": wolfram_output_text,
+                                           "isSuggestion": False})
+                # send that json string back
+                return wolfram_json
+            else:  # if not, give user wolfram's suggestion
+                # print "we're here"
+                wolfram_json = json.dumps({"suggestion": root[0][0].text, "isSuggestion": True})
+                return wolfram_json
+        else:
+            sendmsg("Now you're just trying to make stuff up")
+    except Exception, e:
+        print e.message
+        sendmsg("You broke Wolfram, way to go... jerk")
 # </editor-fold desc="Basic Functions">
 # </editor-fold desc="Commands">
 
@@ -113,6 +147,14 @@ def commands(nick, channel, message):
         sendmsg(fishify.timeSinceFish())
     elif message.lower().startswith(".setfishify"):
         fishify.fishWord = message.split()[1]
+    elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
+        to_send = message.split(".calc")
+        wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
+        if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
+            sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
+        else:
+            sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
+            sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
 
     # ~~~~~~~~ REDDIT
     # search for subreddits (r/example)

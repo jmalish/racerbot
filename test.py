@@ -1,32 +1,54 @@
 import json
-import re
 import requests
+import xml.etree.ElementTree as Etree
+import urllib
 
-
-message = "video 1: https://www.youtube.com/watch?v=ybwCQmbCh2I video 2: https://youtu.be/Ro6HkE0On-k"
 
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     data = json.load(jsonfile)
 
-youtubeApiKey = data["youtubeKey"]  # api key for youtube
+wolfram_api_key = data["wolfram"]  # api key for youtube
 
 
-def get_yt_video_info(video_id):
+def query_wolfram_alpha(query):
+    query = urllib.quote(query)  # convert string to url safe string
     try:
-        # URL to get info for video
-        api_url = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + \
-                  "&key=" + youtubeApiKey + "%20&part=snippet,statistics"
-        data = requests.get(api_url)  # retrieve the JSON from Google's API
-        vid_title = data.json()["items"][0]["snippet"]["title"]  # get title of video
-        vid_channel = data.json()["items"][0]["snippet"]["channelTitle"]  # get channel of video
-        vid_view_count = data.json()["items"][0]["statistics"]["viewCount"]  # get view count of video
-        return "Title: %s | Views: %s | Channel: %s" % (vid_title, vid_view_count, vid_channel)
-    except Exception, e:
-        print e
+        api_url = "http://api.wolframalpha.com/v2/query?appid=%s&input=%s&format=plaintext" %\
+                  (wolfram_api_key, query)
+        wolfram_response = requests.get(api_url).text.encode('utf-8').strip()
 
-# regex to get youtube ID, this might need to be cleaned up
-# will not see links that have an argument before the video id argument (ie ?t=)
-regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
-if regex_youtube:  # if we find a youtube link
-    for id in regex_youtube:  # foreach youtube link in message
-        print get_yt_video_info(id[2])  # pass the video ID to function
+        root = Etree.fromstring(wolfram_response)
+
+        if root.attrib["success"]:
+            if int(root.attrib["numpods"]) > 0:  # make sure the query actually has something to show
+                # get all the stuff we want
+                wolfram_input_title = root[0].attrib["title"]
+                wolfram_input_text = root[0][0][0].text
+                wolfram_output_title = root[1].attrib["title"]
+                wolfram_output_text = root[1][0][0].text
+                # put all that stuff into a json string
+                wolfram_json = json.dumps({"input_title": wolfram_input_title, "input_text": wolfram_input_text,
+                                          "output_title": wolfram_output_title, "output_text": wolfram_output_text,
+                                           "isSuggestion": False})
+                # send that json string back
+                return wolfram_json
+            else:  # if not, give user wolfram's suggestion
+                # print "we're here"
+                wolfram_json = json.dumps({"suggestion": root[0][0].text, "isSuggestion": True})
+                return wolfram_json
+        else:
+            print "Now you're just trying to make stuff up"
+    except Exception, e:
+        print e.message
+        print "You broke Wolfram, way to go... jerk"
+
+message = ".calc test"
+
+
+if message.startswith(".calc"):
+    to_send = message.split(".calc")
+    wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
+    if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
+        print "WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"]
+    else:
+        print "%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"])
