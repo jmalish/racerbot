@@ -110,23 +110,27 @@ def query_wolfram_alpha(query):
                 wolfram_output_title = root[1].attrib["title"]
                 wolfram_output_text = root[1][0][0].text
                 # put all that stuff into a json string
-                wolfram_json = json.dumps({"input_title": str(wolfram_input_title),
-                                           "input_text": str(wolfram_input_text),
-                                           "output_title": str(wolfram_output_title),
-                                           "output_text": str(wolfram_output_text),
-                                           "isSuggestion": False})
-                # send that json string back
+                wolfram_json = json.dumps({"input_title": wolfram_input_title,
+                                           "input_text": wolfram_input_text,
+                                           "output_title": wolfram_output_title,
+                                           "output_text": wolfram_output_text.encode('utf-8'),
+                                           "isSuggestion": False,
+                                           "message": None})
                 return wolfram_json
             else:  # if not, give user wolfram's suggestion
-                # print "we're here"
                 wolfram_json = json.dumps({"suggestion": str(root[0][0].text),
-                                           "isSuggestion": True})
+                                           "isSuggestion": True,
+                                           "message": None})
                 return wolfram_json
         else:
-            sendmsg("Now you're just trying to make stuff up")
+            wolfram_json = json.dumps({"isSuggestion": False,
+                                       "message": "I don't even know how you got this message, I'm impressed"})
+        return wolfram_json
     except Exception, e:
-        print e.message
-        sendmsg("You broke Wolfram, way to go... jerk")
+        print e
+        wolfram_json = json.dumps({"isSuggestion": False,
+                                   "message": "You broke Wolfram, way to go... jerk"})
+        return wolfram_json
 # </editor-fold desc="Basic Functions">
 # </editor-fold desc="Commands">
 
@@ -163,9 +167,11 @@ def commands(nick, channel, message):
             wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
             if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
                 sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
-            else:
+            elif wolfram_results["message"] is None:
                 sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
                 sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+            else:
+                sendmsg(wolfram_results["message"])
         elif message.startswith(".chat"):
             to_send = message.split(".chat")
             sendmsg((clever.ask(to_send[1].split())))

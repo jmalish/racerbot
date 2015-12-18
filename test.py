@@ -10,8 +10,8 @@ with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contai
 wolfram_api_key = secrets["wolfram"]         # api key for wolfram alpha
 
 
-def sendmsg(message):
-    print message
+def sendmsg(received):
+    print received
 
 
 def query_wolfram_alpha(query):
@@ -31,33 +31,39 @@ def query_wolfram_alpha(query):
                 wolfram_output_title = root[1].attrib["title"]
                 wolfram_output_text = root[1][0][0].text
                 # put all that stuff into a json string
-                wolfram_json = json.dumps({"input_title": str(wolfram_input_title),
-                                           "input_text": str(wolfram_input_text),
-                                           "output_title": str(wolfram_output_title),
-                                           "output_text": str(wolfram_output_text),
-                                           "isSuggestion": False})
-                # send that json string back
+                wolfram_json = json.dumps({"input_title": wolfram_input_title,
+                                           "input_text": wolfram_input_text,
+                                           "output_title": wolfram_output_title,
+                                           "output_text": wolfram_output_text.encode('utf-8'),
+                                           "isSuggestion": False,
+                                           "message": None})
                 return wolfram_json
             else:  # if not, give user wolfram's suggestion
-                # print "we're here"
                 wolfram_json = json.dumps({"suggestion": str(root[0][0].text),
-                                           "isSuggestion": True})
+                                           "isSuggestion": True,
+                                           "message": None})
                 return wolfram_json
         else:
             sendmsg("Now you're just trying to make stuff up")
     except Exception, e:
-        print e.message
-        sendmsg("You broke Wolfram, way to go... jerk")
+        print e
+        wolfram_json = json.dumps({"isSuggestion": False,
+                                   "message": "You broke Wolfram, way to go... jerk"})
+        return wolfram_json
 
 
+message = ".calc 150mph for 5 miles"
 
-message = ".calc test"
-
-if message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
-    to_send = message.split(".calc")
-    wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
-    if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
-        sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
-    else:
-        sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
-        sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+try:
+    if message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
+        to_send = message.split(".calc")
+        wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
+        if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
+            sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
+        elif wolfram_results["message"] is None:
+            sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
+            sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+        else:
+            sendmsg(wolfram_results["message"])
+except Exception, e:
+    print e
