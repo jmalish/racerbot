@@ -11,6 +11,8 @@ import requests
 from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup
 import urllib
+import xml.etree.ElementTree as Etree
+from chatterbot import ChatBot
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -31,6 +33,10 @@ youtubeApiKey = secrets["youtube"]         # api key for youtube
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
+
+# chatterbot setup
+chatbot = ChatBot("racerbot94")
+# chatbot.train("chatterbot.corpus.english") # disabled atm, want to see what it does
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -132,75 +138,95 @@ def commands(nick, channel, message):
                 try:
                     sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
                 except Exception, e:
-                    print "Error in random fishify: " + e
+                    print "Error in random fishify:"
+                    print e
 
-    # this block is all the "dot" commands, where something is requested from the bot by a user
-    if message.lower().find(".here") != -1:  # checks if bot is listening to us
-        sendmsg("Yup!")
-    elif message.lower().startswith(".fishify"):
-        sendmsg(fishify.fish(message, False))
-    elif message.lower().startswith(".setfishtimer"):
-        sendmsg(fishify.setTimer(message.split()[1]))
-    elif message.lower().startswith(".getfishtimer"):
-        sendmsg(fishify.getTimer())
-    elif message.lower().startswith(".timesincefish"):
-        sendmsg(fishify.timeSinceFish())
-    elif message.lower().startswith(".setfishify"):
-        fishify.fishWord = message.split()[1]
-    elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
-        to_send = message.split(".calc")
-        wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
-        if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
-            sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
-        else:
-            sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
-            sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+    try:
+        # this block is all the "dot" commands, where something is requested from the bot by a user
+        if message.lower().find(".here") != -1:  # checks if bot is listening to us
+            sendmsg("Yup!")
+        elif message.lower().startswith(".fishify"):
+            sendmsg(fishify.fish(message, False))
+        elif message.lower().startswith(".setfishtimer"):
+            sendmsg(fishify.setTimer(message.split()[1]))
+        elif message.lower().startswith(".getfishtimer"):
+            sendmsg(fishify.getTimer())
+        elif message.lower().startswith(".timesincefish"):
+            sendmsg(fishify.timeSinceFish())
+        elif message.lower().startswith(".setfishify"):
+            fishify.fishWord = message.split()[1]
+        elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
+            to_send = message.split(".calc")
+            wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
+            if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
+                sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
+            else:
+                sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
+                sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+        elif message.lower().startswith(".chat"):
+            to_send = message.split(".chat")
+            sendmsg(chatbot.get_response(to_send[1].split()))
+    except Exception, e:
+        print "Something went wrong in dot commands:"
+        print e
 
     # ~~~~~~~~ REDDIT
-    # search for subreddits (r/example)
-    subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-    if subreddit_regex:  # if this is true, we found a subreddit name
-        for result in subreddit_regex:
-            if result[1]:  # if result[1] has something in it, that means we have a comments link
-                thread_id = result[2]  # get thread ID from regex group 3
-                try:
-                    thread_info = reddit.get_submission(submission_id=thread_id)
-                    sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
-                except Exception as e:
-                    print e
-            else:  # if not, it's just a subreddit
-                subreddit_name = result[0]  # get subreddit name from regex group 1
-                try:
-                    subreddit_title = reddit.get_subreddit(subreddit_name).title
-                    print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
-                except Exception as e:
-                    sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
-                    print e
+    try:
+        # search for subreddits (r/example)
+        subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+        if subreddit_regex:  # if this is true, we found a subreddit name
+            for result in subreddit_regex:
+                if result[1]:  # if result[1] has something in it, that means we have a comments link
+                    thread_id = result[2]  # get thread ID from regex group 3
+                    try:
+                        thread_info = reddit.get_submission(submission_id=thread_id)
+                        sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
+                    except Exception as e:
+                        print e
+                else:  # if not, it's just a subreddit
+                    subreddit_name = result[0]  # get subreddit name from regex group 1
+                    try:
+                        subreddit_title = reddit.get_subreddit(subreddit_name).title
+                        print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
+                    except Exception as e:
+                        sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+                        print e
+    except Exception, e:
+        print "Something went wrong in reddit:"
+        print e
 
     # ~~~~~~~~ WEBSITE TITLES
-    # search for websites
-    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
-    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
-    if url_regex:  # if this is true, the message has a url in it
-        for word in message.split():
-            word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
-            if ("reddit" in word) or ("twitch" in word):
-                # reddit and twitch stuff is already being taken care of
-                # no need to get it here
-                pass
-            elif "." in word:  # look for 'words' with a '.' in the middle
-                if "@" not in word:  # ignore emails
-                    title = get_page_title(word)
-                    if title:
-                        sendmsg(title)
+    try:
+        # search for websites
+        url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
+        # here, we're just seeing if the message even contains a url, not concerned with whole url yet
+        if url_regex:  # if this is true, the message has a url in it
+            for word in message.split():
+                word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
+                if ("reddit" in word) or ("twitch" in word):
+                    # reddit and twitch stuff is already being taken care of
+                    # no need to get it here
+                    pass
+                elif "." in word:  # look for 'words' with a '.' in the middle
+                    if "@" not in word:  # ignore emails
+                        title = get_page_title(word)
+                        if title:
+                            sendmsg(title)
+    except Exception, e:
+        print "Something went wrong in website title:"
+        print e
 
     # ~~~~~~~~ YOUTUBE
-    # regex to get youtube ID, this might need to be cleaned up
-    # will not see links that have an argument before the video id argument (ie ?t=)
-    regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
-    if regex_youtube:  # if we find a youtube link
-        for id in regex_youtube:  # foreach youtube link in message
-            sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+    try:
+        # regex to get youtube ID, this might need to be cleaned up
+        # will not see links that have an argument before the video id argument (ie ?t=)
+        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
+        if regex_youtube:  # if we find a youtube link
+            for id in regex_youtube:  # foreach youtube link in message
+                sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+    except Exception, e:
+        print "Something went wrong in youtube:"
+        print e
 
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
