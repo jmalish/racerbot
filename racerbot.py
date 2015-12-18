@@ -12,7 +12,7 @@ from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup
 import urllib
 import xml.etree.ElementTree as Etree
-from chatterbot import ChatBot
+import cleverbot
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -28,15 +28,14 @@ with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contai
     secrets = json.load(jsonfile)
 
 wolfram_api_key = secrets["wolfram"]         # api key for wolfram alpha
-youtubeApiKey = secrets["youtube"]         # api key for youtube
+youtubeApiKey = secrets["youtubeKey"]         # api key for youtube
 
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 
-# chatterbot setup
-chatbot = ChatBot("racerbot94")
-# chatbot.train("chatterbot.corpus.english") # disabled atm, want to see what it does
+# cleverbot setup
+clever = cleverbot.Cleverbot()
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -111,14 +110,17 @@ def query_wolfram_alpha(query):
                 wolfram_output_title = root[1].attrib["title"]
                 wolfram_output_text = root[1][0][0].text
                 # put all that stuff into a json string
-                wolfram_json = json.dumps({"input_title": wolfram_input_title, "input_text": wolfram_input_text,
-                                           "output_title": wolfram_output_title, "output_text": wolfram_output_text,
+                wolfram_json = json.dumps({"input_title": wolfram_input_title.encode('utf-8'),
+                                           "input_text": wolfram_input_text.encode('utf-8'),
+                                           "output_title": wolfram_output_title.encode('utf-8'),
+                                           "output_text": wolfram_output_text.encode('utf-8'),
                                            "isSuggestion": False})
                 # send that json string back
                 return wolfram_json
             else:  # if not, give user wolfram's suggestion
                 # print "we're here"
-                wolfram_json = json.dumps({"suggestion": root[0][0].text, "isSuggestion": True})
+                wolfram_json = json.dumps({"suggestion": root[0][0].text.encode('utf-8'),
+                                           "isSuggestion": True})
                 return wolfram_json
         else:
             sendmsg("Now you're just trying to make stuff up")
@@ -155,6 +157,7 @@ def commands(nick, channel, message):
             sendmsg(fishify.timeSinceFish())
         elif message.lower().startswith(".setfishify"):
             fishify.fishWord = message.split()[1]
+            sendmsg("You got it, I'll put %s all over everything now" % fishify.fishWord)
         elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
             to_send = message.split(".calc")
             wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
@@ -163,9 +166,9 @@ def commands(nick, channel, message):
             else:
                 sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
                 sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
-        elif message.lower().startswith(".chat"):
+        elif message.startswith(".chat"):
             to_send = message.split(".chat")
-            sendmsg(chatbot.get_response(to_send[1].split()))
+            sendmsg((clever.ask(to_send[1].split())))
     except Exception, e:
         print "Something went wrong in dot commands:"
         print e
@@ -187,7 +190,7 @@ def commands(nick, channel, message):
                     subreddit_name = result[0]  # get subreddit name from regex group 1
                     try:
                         subreddit_title = reddit.get_subreddit(subreddit_name).title
-                        print ("http://www.reddit.com/r/" + subreddit_name + " - " + subreddit_title)
+                        sendmsg("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
                     except Exception as e:
                         sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
                         print e
@@ -203,9 +206,10 @@ def commands(nick, channel, message):
         if url_regex:  # if this is true, the message has a url in it
             for word in message.split():
                 word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
-                if ("reddit" in word) or ("twitch" in word):
-                    # reddit and twitch stuff is already being taken care of
+                if ("reddit" in word) or ("twitch" in word) or ("youtube" in word) or ("freenode" in word):
+                    # reddit, twitch, and youtube stuff is already being taken care of
                     # no need to get it here
+                    # freenode server pings bot every so often, he really wants to get the title of those too
                     pass
                 elif "." in word:  # look for 'words' with a '.' in the middle
                     if "@" not in word:  # ignore emails
