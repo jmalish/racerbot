@@ -1,12 +1,16 @@
-    help
-x    fishify (random and called)
-x    setfishify
-x    setfishifytimer
-x    get time since fishing
-x    wolfram alpha
-    cleverbot
-x    subreddit
-x    get title of website
-x    get title of youtube (youtube.com and youtu.be)
-    streamers
-    .send
+.help - gives a link to this page
+.here - check if the bot is paying attention
+.source - gives a link so people can check out racerbot's source
+.fishify <sentence> - change a random syllable in a random word in the sentence
+.setfishtimer <number> - set amount of time between random fishify in minutes
+.getfishtimer - get amount of time between random fishify in minutes
+.timesincefish - get time since last random fishify
+.setfishify <word> - set word that fishify replaces with
+.calc <query> - query Wolfram Alpha
+.chat <message> - talk to the bot
+.livestreams - get list of all current live streams
+.allstreams - get list of all streams on record
+.addstream <channel name> - add twitch channel to list of channels the bot watches for
+.removestream <channel name> - remove twitch channel from list of channels the bot watches for
+.timesincetwitch - see how long it's been since the bot has updated twitch statuses
+.livestreams - get all channels that are currently live on twitch
