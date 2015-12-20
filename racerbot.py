@@ -231,7 +231,7 @@ def commands(nick, channel, message):
     try:
         # regex to get youtube ID, this might need to be cleaned up
         # will not see links that have an argument before the video id argument (ie ?t=)
-        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
+        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
         if regex_youtube:  # if we find a youtube link
             for id in regex_youtube:  # foreach youtube link in message
                 sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
