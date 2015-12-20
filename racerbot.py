@@ -20,8 +20,8 @@ import twitch
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-# hannel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py"
+# channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+botnick = "racerbot_py2"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -34,13 +34,8 @@ youtubeApiKey = secrets["youtubeKey"]         # api key for youtube
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
-
-# cleverbot setup
-clever = cleverbot.Cleverbot()
-
-# twitch setup
-twitch.twitch_initial()
-tw_timer = time.now()
+clever = cleverbot.Cleverbot()  # cleverbot setup
+twitch.twitch_initial()  # twitch setup
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -49,8 +44,6 @@ tw_timer = time.now()
 def joinchan(chan):  # joins channels
     ircsock.send("JOIN " + chan + "\n")
     print "Joining " + chan
-    global joined
-    joined = True
 
 
 def ping():  # responds to pings from server
@@ -141,16 +134,11 @@ def query_wolfram_alpha(query):
 
 
 def commands(nick, channel, message):
-    # twitch stuff
-    now_streaming = twitch.timer_check()  # check for twitch updates
-    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
-        for tw_channel in now_streaming:
-            sendmsg(twitch.get_channel_info(tw_channel))
-
     # fishify stuff
     random.seed(time.time())
     randomInt = random.randint(0, 30)
-    if joined:  # no reason to fishify stuff if we haven't even joined yet
+    if joined:  # there are a few things we don't want to do until joined
+        # fishify stuff
         if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
             if fishify.timerCheck():
                 try:
@@ -158,6 +146,12 @@ def commands(nick, channel, message):
                 except Exception, e:
                     print "Error in random fishify:"
                     print e
+
+        # twitch stuff
+        now_streaming = twitch.timer_check()  # check for twitch updates
+        if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+            for tw_channel in now_streaming:
+                sendmsg(twitch.get_channel_info(tw_channel))
 
     try:
         # this block is all the "dot" commands, where something is requested from the bot by a user
@@ -203,10 +197,11 @@ def commands(nick, channel, message):
         elif message.lower().startswith(".allstreams"):
             if twitch.all_channels == 0:
                 sendmsg("I don't have any streamers in my list! Add some with '.addstream <channel name>")
-            channels = ""
-            for tw_channel in twitch.all_channels:
-                channels += tw_channel + ", "
-            print channels.rstrip().rstrip(',')
+            else:
+                channels = ""
+                for tw_channel in twitch.all_channels:
+                    channels += tw_channel + ", "
+                print channels.rstrip().rstrip(',')
         elif message.lower().startswith(".addstream"):
             channel_to_add = message.split(".addstream ")
             sendmsg(twitch.add_new_channel(channel_to_add[1]))
@@ -215,10 +210,6 @@ def commands(nick, channel, message):
             sendmsg(twitch.remove_channel(channel_to_remove[1]))
         elif message.lower().startswith(".timesincetwitch"):
             sendmsg(twitch.time_since_update())
-        elif message.lower().startswith(".livestreams"):
-            twitch.update_stream_statuses()
-            for tw_channel in twitch.online_channels:
-                sendmsg(twitch.get_channel_info(tw_channel))
     except Exception, e:
         print "Something went wrong in dot commands:"
         print e
@@ -303,10 +294,9 @@ while True:  # this is the actual bot itself, everything in this block is what t
     if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
         ping()
 
-    if "End of /NAMES list." in ircmsg:
-        global joined
+    if "/NAMES" in ircmsg:
+        print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
         joined = True  # we've joined the channel
-        print "I'm in!"
         fishify.fishClock = calendar.timegm(time.gmtime()) - 300
 
     if ircmsg.find(' PRIVMSG '):

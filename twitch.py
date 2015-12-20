@@ -9,12 +9,13 @@ all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
 timer = 300  # used to tell bot when to check for channel updates (300 = 5 minutes)
+tw_clock = 0
 
 
 # used to check if it's been long enough to update streams
 def timer_check():
     time_now = calendar.timegm(time.gmtime())
-    if (time_now - time_since_check) > timer:
+    if (time_now - tw_clock) > timer:
         return update_stream_statuses()
     else:
         return []
@@ -41,7 +42,7 @@ def twitch_initial():
                     print e
     else:
         print "streamers.json file does not exist, creating it now"
-        open('streamers.json', 'w')  # create file
+        open('streamers.json', 'w').close()  # create file
 
 
 def get_channel_info(channel):
@@ -112,7 +113,7 @@ def update_stream_statuses():
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
             # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"] is None:  # channel is now live
+            if channel_details.json()["stream"] is not None:  # channel is now live
                 offline_channels.remove(channel)  # remove the channel from list of offline
                 online_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
