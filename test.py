@@ -5,4 +5,5 @@ import time
 
 twitch.twitch_initial()
 
-print twitch.online_channels
+time.sleep(5)
+print twitch.timer_check()

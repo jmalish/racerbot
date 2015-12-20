@@ -8,7 +8,7 @@ import time
 all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 300  # used to tell bot when to check for channel updates (300 = 5 minutes)
+timer = 120  # used to tell bot when to check for channel updates (120 = 2 minutes)
 tw_clock = 0
 
 
@@ -43,6 +43,8 @@ def twitch_initial():
     else:
         print "streamers.json file does not exist, creating it now"
         open('streamers.json', 'w').close()  # create file
+    global tw_clock
+    tw_clock = calendar.timegm(time.gmtime())
 
 
 def get_channel_info(channel):
@@ -120,8 +122,8 @@ def update_stream_statuses():
                 now_streaming.append(channel)
             else:
                 pass  # don't do anything, as the channel is still offline
-        global time_since_check
-        time_since_check = calendar.timegm(time.gmtime())
+        global tw_clock
+        tw_clock = calendar.timegm(time.gmtime())
         return now_streaming
     except Exception, e:
         print "Error in update_streams_status()"
@@ -131,7 +133,7 @@ def update_stream_statuses():
 # gets time since last fishify
 def time_since_update():
     time_now = calendar.timegm(time.gmtime())
-    time_since_tw_update = (time_now - time_since_check)  # get seconds since fish
+    time_since_tw_update = (time_now - tw_clock)  # get seconds since fish
 
     m, s = divmod(time_since_tw_update, 60)  # < this converts seconds
     h, m = divmod(m, 60)                  # < to HH:MM:SS form
