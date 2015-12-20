@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import urllib
 import xml.etree.ElementTree as Etree
 import cleverbot
+import twitch
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -36,6 +37,10 @@ reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with
 
 # cleverbot setup
 clever = cleverbot.Cleverbot()
+
+# twitch setup
+twitch.twitch_initial()
+tw_timer = time.now()
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -136,6 +141,13 @@ def query_wolfram_alpha(query):
 
 
 def commands(nick, channel, message):
+    # twitch stuff
+    now_streaming = twitch.timer_check()  # check for twitch updates
+    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+        for tw_channel in now_streaming:
+            sendmsg(twitch.get_channel_info(tw_channel))
+
+    # fishify stuff
     random.seed(time.time())
     randomInt = random.randint(0, 30)
     if joined:  # no reason to fishify stuff if we haven't even joined yet
@@ -151,6 +163,10 @@ def commands(nick, channel, message):
         # this block is all the "dot" commands, where something is requested from the bot by a user
         if message.lower().find(".here") != -1:  # checks if bot is listening to us
             sendmsg("Yup!")
+        elif message.lower().startswith(".source"):
+            sendmsg("https://github.com/jmalish/racerbot")
+        elif message.lower().startswith(".help"):
+            secrets("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
         elif message.lower().startswith(".fishify"):
             sendmsg(fishify.fish(message, False))
         elif message.lower().startswith(".setfishtimer"):
@@ -175,6 +191,34 @@ def commands(nick, channel, message):
         elif message.startswith(".chat"):
             to_send = message.split(".chat")
             sendmsg((clever.ask(to_send[1].split())))
+        elif message.lower().startswith(".livestreams"):
+            twitch.update_stream_statuses()
+            if len(twitch.online_channels) > 0:
+                for tw_channel in twitch.online_channels:
+                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                    sendmsg("%s is streaming %s | Title: %s" %
+                            (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+            else:
+                sendmsg("No one's streaming!")
+        elif message.lower().startswith(".allstreams"):
+            if twitch.all_channels == 0:
+                sendmsg("I don't have any streamers in my list! Add some with '.addstream <channel name>")
+            channels = ""
+            for tw_channel in twitch.all_channels:
+                channels += tw_channel + ", "
+            print channels.rstrip().rstrip(',')
+        elif message.lower().startswith(".addstream"):
+            channel_to_add = message.split(".addstream ")
+            sendmsg(twitch.add_new_channel(channel_to_add[1]))
+        elif message.lower().startswith(".removestream"):
+            channel_to_remove = message.split(".removestream ")
+            sendmsg(twitch.remove_channel(channel_to_remove[1]))
+        elif message.lower().startswith(".timesincetwitch"):
+            sendmsg(twitch.time_since_update())
+        elif message.lower().startswith(".livestreams"):
+            twitch.update_stream_statuses()
+            for tw_channel in twitch.online_channels:
+                sendmsg(twitch.get_channel_info(tw_channel))
     except Exception, e:
         print "Something went wrong in dot commands:"
         print e
@@ -201,7 +245,7 @@ def commands(nick, channel, message):
                         sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
                         print e
     except Exception, e:
-        print "Something went wrong in reddit:"
+        print "Something went wrong in reddit block:"
         print e
 
     # ~~~~~~~~ WEBSITE TITLES
