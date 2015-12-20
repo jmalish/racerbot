@@ -21,7 +21,7 @@ server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 # channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py2"
+botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -160,7 +160,7 @@ def commands(nick, channel, message):
         elif message.lower().startswith(".source"):
             sendmsg("https://github.com/jmalish/racerbot")
         elif message.lower().startswith(".help"):
-            secrets("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
+            sendmsg("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
         elif message.lower().startswith(".fishify"):
             sendmsg(fishify.fish(message, False))
         elif message.lower().startswith(".setfishtimer"):
