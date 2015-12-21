@@ -19,9 +19,9 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-# channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py2"
+# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
