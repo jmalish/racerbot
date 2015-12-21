@@ -120,6 +120,7 @@ def update_stream_statuses():
                 online_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
                 now_streaming.append(channel)
+                print "%s has started streaming" % channel
             else:
                 pass  # don't do anything, as the channel is still offline
         global tw_clock

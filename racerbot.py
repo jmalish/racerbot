@@ -148,6 +148,7 @@ def commands(nick, channel, message):
                     print e
 
         # twitch stuff
+        print "Checking for newly started streams"
         now_streaming = twitch.timer_check()  # check for twitch updates
         if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
             for tw_channel in now_streaming:
