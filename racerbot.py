@@ -19,9 +19,9 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py"
+channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+# channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+botnick = "racerbot_py2"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -134,26 +134,6 @@ def query_wolfram_alpha(query):
 
 
 def commands(nick, channel, message):
-    # fishify stuff
-    random.seed(time.time())
-    randomInt = random.randint(0, 30)
-    if joined:  # there are a few things we don't want to do until joined
-        # fishify stuff
-        if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
-            if fishify.timerCheck():
-                try:
-                    sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
-                except Exception, e:
-                    print "Error in random fishify:"
-                    print e
-
-        # twitch stuff
-        print "Checking for newly started streams"
-        now_streaming = twitch.timer_check()  # check for twitch updates
-        if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
-            for tw_channel in now_streaming:
-                sendmsg(twitch.get_channel_info(tw_channel))
-
     try:
         # this block is all the "dot" commands, where something is requested from the bot by a user
         if message.lower().find(".here") != -1:  # checks if bot is listening to us
@@ -202,7 +182,7 @@ def commands(nick, channel, message):
                 channels = ""
                 for tw_channel in twitch.all_channels:
                     channels += tw_channel + ", "
-                print channels.rstrip().rstrip(',')
+                sendmsg(channels.rstrip().rstrip(','))
         elif message.lower().startswith(".addstream"):
             channel_to_add = message.split(".addstream ")
             sendmsg(twitch.add_new_channel(channel_to_add[1]))
@@ -211,6 +191,27 @@ def commands(nick, channel, message):
             sendmsg(twitch.remove_channel(channel_to_remove[1]))
         elif message.lower().startswith(".timesincetwitch"):
             sendmsg(twitch.time_since_update())
+        else:  # if no commands are called, then we'll do some fun stuff
+            # fishify stuff
+            random.seed(time.time())
+            randomInt = random.randint(0, 30)
+            if joined:  # there are a few things we don't want to do until joined
+                # fishify stuff
+                if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
+                    if fishify.timerCheck():
+                        try:
+                            sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
+                        except Exception, e:
+                            print "Error in random fishify:"
+                            print e
+
+            # twitch stuff
+            now_streaming = twitch.timer_check()  # check for twitch updates
+            if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+                for tw_channel in now_streaming:
+                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                    sendmsg("%s has started streaming %s | Title: %s" %
+                            (stream_info["display_name"], stream_info["game"], stream_info["status"]))
     except Exception, e:
         print "Something went wrong in dot commands:"
         print e
