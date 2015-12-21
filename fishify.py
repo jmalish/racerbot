@@ -96,7 +96,8 @@ def fish(sentence, isRandomCall):  # takes a word and changes the syllable to a 
             return newSentence
         except Exception as e:  # catch if the selected word doesn't exist in the dictionary
             i += 1
-            if i == 5:
-                # if it tried all five times and failed, tell chat what happened
+            time.sleep(.5)  # wait a sec to give random seed a chance to change
+            if i == 3:
+                # if it tried all three times and failed, tell chat what happened
                 print "Error in fishify(): " + e.message
                 return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"

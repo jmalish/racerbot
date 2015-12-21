@@ -8,7 +8,7 @@ import time
 all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 120  # used to tell bot when to check for channel updates (120 = 2 minutes)
+timer = 300  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0
 
 
@@ -71,6 +71,7 @@ def add_new_channel(new_channel):
         channel_details = requests.get(api_url)
         if "error" not in channel_details.json():  # this is a crappy way to do this, I don't know a better way
             all_channels.append(new_channel)  # add channel to list
+            offline_channels.append(new_channel)
             with open('streamers.json', 'w') as outfile:  # update file
                 json.dump(all_channels, outfile)  # write all channels to file, including new channel
 
@@ -99,6 +100,7 @@ def remove_channel(channel_to_remove):
 
 
 def update_stream_statuses():
+    print "Updating twitch stream statuses"
     now_streaming = []  # used for channels that have started streaming
     try:
         # first, see if the live streams are still live
@@ -120,6 +122,7 @@ def update_stream_statuses():
                 online_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
                 now_streaming.append(channel)
+                print "%s has started streaming" % channel
             else:
                 pass  # don't do anything, as the channel is still offline
         global tw_clock
