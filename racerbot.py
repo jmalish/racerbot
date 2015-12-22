@@ -36,6 +36,7 @@ joined = False      # tells us if bot has successfully joined, keeps from sendin
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 clever = cleverbot.Cleverbot()  # cleverbot setup
 twitch.twitch_initial()  # twitch setup
+print "Initial setup done"
 
 # </editor-fold desc="Variables">
 # <editor-fold desc="Basic Functions">
@@ -279,6 +280,7 @@ def commands(nick, channel, message):
 # </editor-fold desc="Commands">
 # <editor-fold desc="Bot">
 # setting up socket
+print "Attempting to connect to server"
 ircsock.connect((server, port))  # Connect to the server using provided port
 ircsock.send("USER " + botnick + " " + botnick + " " + botnick + " Created by racer0940\n")  # user authentication
 print "Authenticating"
