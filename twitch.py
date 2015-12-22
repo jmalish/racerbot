@@ -16,11 +16,44 @@ tw_clock = 0
 def timer_check():
     time_now = calendar.timegm(time.gmtime())
     if (time_now - tw_clock) > timer:
-        print "Updating twitch"
-        return update_stream_statuses()
+        print "Updating twitch, started streaming:"
+        now_streaming = update_stream_statuses()
+        return now_streaming
     else:
-        print "Not time to update twitch yet"
         return []
+
+
+def update_stream_statuses():
+    now_streaming = []  # used for channels that have started streaming
+    try:
+        # first, see if the live streams are still live
+        for channel in online_channels:
+            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
+            channel_details = requests.get(api_url)
+            # read API to see if streamer is live and put them in correct list
+            if channel_details.json()["stream"] is None:  # channel is no longer live
+                online_channels.remove(channel)  # remove the channel from list of online
+                offline_channels.append(channel)  # and move it to the offline list
+            else:
+                pass  # don't do anything, as the channel is still live
+        for channel in offline_channels:
+            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
+            channel_details = requests.get(api_url)
+            # read API to see if streamer is live and put them in correct list
+            if channel_details.json()["stream"] is not None:  # channel is now live
+                offline_channels.remove(channel)  # remove the channel from list of offline
+                online_channels.append(channel)  # and move it to the online list
+                # the channel has gone from offline to online, so we need to let the irc room know
+                now_streaming.append(channel)
+                # print "%s has started streaming" % channel  # debugging
+            else:
+                pass  # don't do anything, as the channel is still offline
+        global tw_clock
+        tw_clock = calendar.timegm(time.gmtime())
+        return now_streaming
+    except Exception, e:
+        print "Error in update_streams_status()"
+        print e
 
 
 # initial setup, should only be run when bot first joins (and again every time it has to rejoin)
@@ -99,39 +132,6 @@ def remove_channel(channel_to_remove):
         print "Error in twitch.remove_channel, possibly because channel doesn't exist"
         print e
         return "%s is not in the list of streamers" % channel_to_remove
-
-
-def update_stream_statuses():
-    now_streaming = []  # used for channels that have started streaming
-    try:
-        # first, see if the live streams are still live
-        for channel in online_channels:
-            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url)
-            # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"] is None:  # channel is no longer live
-                online_channels.remove(channel)  # remove the channel from list of online
-                offline_channels.append(channel)  # and move it to the offline list
-            else:
-                pass  # don't do anything, as the channel is still live
-        for channel in offline_channels:
-            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url)
-            # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"] is not None:  # channel is now live
-                offline_channels.remove(channel)  # remove the channel from list of offline
-                online_channels.append(channel)  # and move it to the online list
-                # the channel has gone from offline to online, so we need to let the irc room know
-                now_streaming.append(channel)
-                print "%s has started streaming" % channel  # debugging
-            else:
-                pass  # don't do anything, as the channel is still offline
-        global tw_clock
-        tw_clock = calendar.timegm(time.gmtime())
-        return now_streaming
-    except Exception, e:
-        print "Error in update_streams_status()"
-        print e
 
 
 # gets time since last fishify

@@ -171,7 +171,7 @@ def commands(nick, channel, message):
             if len(twitch.online_channels) > 0:
                 for tw_channel in twitch.online_channels:
                     stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                    sendmsg("%s is streaming %s | Title: %s" %
+                    sendmsg("www.twitch.tv/%s is streaming %s | Title: %s" %
                             (stream_info["display_name"], stream_info["game"], stream_info["status"]))
             else:
                 sendmsg("No one's streaming!")
@@ -210,7 +210,7 @@ def commands(nick, channel, message):
             if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
                 for tw_channel in now_streaming:
                     stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                    sendmsg("%s has started streaming %s | Title: %s" %
+                    sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
                             (stream_info["display_name"], stream_info["game"], stream_info["status"]))
     except Exception, e:
         print "Something went wrong in dot commands:"

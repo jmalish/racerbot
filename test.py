@@ -13,6 +13,17 @@ timer = 120  # used to tell bot when to check for channel updates (120 = 2 minut
 tw_clock = 0
 
 
+# used to check if it's been long enough to update streams
+def timer_check():
+    time_now = calendar.timegm(time.gmtime())
+    if (time_now - tw_clock) > timer:
+        print "Updating twitch, started streaming:"
+        now_streaming = update_stream_statuses()
+        return now_streaming
+    else:
+        return []
+
+
 def update_stream_statuses():
     now_streaming = []  # used for channels that have started streaming
     try:
@@ -20,7 +31,6 @@ def update_stream_statuses():
         for channel in online_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
-            print channel + " - " + str(channel_details.json()["stream"])
             # read API to see if streamer is live and put them in correct list
             if channel_details.json()["stream"] is None:  # channel is no longer live
                 online_channels.remove(channel)  # remove the channel from list of online
@@ -30,14 +40,13 @@ def update_stream_statuses():
         for channel in offline_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
-            print channel + " - " + str(channel_details.json()["stream"])
             # read API to see if streamer is live and put them in correct list
             if channel_details.json()["stream"] is not None:  # channel is now live
                 offline_channels.remove(channel)  # remove the channel from list of offline
                 online_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
                 now_streaming.append(channel)
-                print "%s has started streaming" % channel  # debugging
+                # print "%s has started streaming" % channel  # debugging
             else:
                 pass  # don't do anything, as the channel is still offline
         global tw_clock
@@ -46,15 +55,6 @@ def update_stream_statuses():
     except Exception, e:
         print "Error in update_streams_status()"
         print e
-
-
-# used to check if it's been long enough to update streams
-def timer_check():
-    time_now = calendar.timegm(time.gmtime())
-    if (time_now - tw_clock) > timer:
-        return update_stream_statuses()
-    else:
-        return []
 
 
 print timer_check()
