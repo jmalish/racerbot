@@ -219,7 +219,7 @@ def commands(nick, channel, message):
     # ~~~~~~~~ REDDIT
     try:
         # search for subreddits (r/example)
-        subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+        subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]{11}))?", message, flags=re.IGNORECASE)
         if subreddit_regex:  # if this is true, we found a subreddit name
             for result in subreddit_regex:
                 if result[1]:  # if result[1] has something in it, that means we have a comments link
