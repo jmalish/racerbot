@@ -16,8 +16,10 @@ tw_clock = 0
 def timer_check():
     time_now = calendar.timegm(time.gmtime())
     if (time_now - tw_clock) > timer:
+        print "Updating twitch"
         return update_stream_statuses()
     else:
+        print "Not time to update twitch yet"
         return []
 
 

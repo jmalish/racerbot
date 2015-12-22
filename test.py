@@ -8,7 +8,7 @@ api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
 
 all_channels = ["bobross", "racer0940", "SrafaOrasp"]  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
-offline_channels = ["bobross", "racer0940", "SrafaOrasp"]  # this holds all channels that are currently offline
+offline_channels = ["bobross", "racer0940", "InJayzBraiN"]  # this holds all channels that are currently offline
 timer = 120  # used to tell bot when to check for channel updates (120 = 2 minutes)
 tw_clock = 0
 
@@ -20,6 +20,7 @@ def update_stream_statuses():
         for channel in online_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
+            print channel + " - " + str(channel_details.json()["stream"])
             # read API to see if streamer is live and put them in correct list
             if channel_details.json()["stream"] is None:  # channel is no longer live
                 online_channels.remove(channel)  # remove the channel from list of online
@@ -29,6 +30,7 @@ def update_stream_statuses():
         for channel in offline_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
+            print channel + " - " + str(channel_details.json()["stream"])
             # read API to see if streamer is live and put them in correct list
             if channel_details.json()["stream"] is not None:  # channel is now live
                 offline_channels.remove(channel)  # remove the channel from list of offline
