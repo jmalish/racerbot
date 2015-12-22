@@ -128,7 +128,7 @@ def update_stream_statuses():
         tw_clock = calendar.timegm(time.gmtime())
         return now_streaming
     except Exception, e:
-        print "Error in update_streams_status():"
+        print "Error in update_streams_status()"
         print e
 
 
