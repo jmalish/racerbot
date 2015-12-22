@@ -6,9 +6,9 @@ import calendar
 channel = "racer0940"
 api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
 
-all_channels = ["bobross", "racer0940"]  # this holds all channels, on and offline
+all_channels = ["bobross", "racer0940", "SrafaOrasp"]  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
-offline_channels = ["bobross", "racer0940"]  # this holds all channels that are currently offline
+offline_channels = ["bobross", "racer0940", "SrafaOrasp"]  # this holds all channels that are currently offline
 timer = 120  # used to tell bot when to check for channel updates (120 = 2 minutes)
 tw_clock = 0
 
@@ -50,10 +50,8 @@ def update_stream_statuses():
 def timer_check():
     time_now = calendar.timegm(time.gmtime())
     if (time_now - tw_clock) > timer:
-        print "updating"
         return update_stream_statuses()
     else:
-        print "not updating"
         return []
 
 
