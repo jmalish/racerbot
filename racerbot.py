@@ -19,9 +19,9 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-# channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py2"
+# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -268,7 +268,7 @@ def commands(nick, channel, message):
     try:
         # regex to get youtube ID, this might need to be cleaned up
         # will not see links that have an argument before the video id argument (ie ?t=)
-        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]+)", message, flags=re.IGNORECASE)
+        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})", message, flags=re.IGNORECASE)
         if regex_youtube:  # if we find a youtube link
             for id in regex_youtube:  # foreach youtube link in message
                 sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
