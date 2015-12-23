@@ -19,8 +19,8 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
+# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -175,6 +175,14 @@ def commands(nick, channel, message):
                             (stream_info["display_name"], stream_info["game"], stream_info["status"]))
             else:
                 sendmsg("No one's streaming!")
+        elif message.lower().startswith(".offlinestreams"):
+            if len(twitch.offline_channels) > 0:
+                channels = ""
+                for tw_channel in twitch.all_channels:
+                    channels += tw_channel + ", "
+                sendmsg(channels.rstrip().rstrip(','))
+            else:
+                sendmsg("There are no offline channels.")
         elif message.lower().startswith(".allstreams"):
             if twitch.all_channels == 0:
                 sendmsg("I don't have any streamers in my list! Add some with '.addstream <channel name>")

@@ -8,7 +8,7 @@ import time
 all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 300  # used to tell bot when to check for channel updates (60 = 1 minute)
+timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0
 
 
@@ -16,8 +16,8 @@ tw_clock = 0
 def timer_check():
     time_now = calendar.timegm(time.gmtime())
     if (time_now - tw_clock) > timer:
-        print "Updating twitch, started streaming:"
         now_streaming = update_stream_statuses()
+        print "Updating twitch, started streaming: " + str(len(now_streaming))
         return now_streaming
     else:
         return []
@@ -58,28 +58,23 @@ def update_stream_statuses():
 
 # initial setup, should only be run when bot first joins (and again every time it has to rejoin)
 def twitch_initial():
-    # first, make sure the streamers file actually exists
-    if os.path.isfile("streamers.json"):
-        # read the json file of streamers and add them to our list
-        with open('streamers.json') as streamers_json:
-            for channel in json.load(streamers_json):
-                try:
+    try:
+        # first, make sure the streamers file actually exists
+        if os.path.isfile("streamers.json"):
+            # read the json file of streamers and add them to our list
+            with open('streamers.json') as streamers_json:
+                for channel in json.load(streamers_json):
                     all_channels.append(channel)  # add the current streamer to the list of all channels
-
-                    api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-                    channel_details = requests.get(api_url)
-                    # read API to see if streamer is live and put them in correct list
-                    if channel_details.json()["stream"] is not None:  # if live
-                        online_channels.append(channel)  # add channel to list of online channels
-                    else:
-                        offline_channels.append(channel)  # add channel to list of offline channels
-                except Exception, e:
-                    print e
-    else:
-        print "streamers.json file does not exist, creating it now"
-        open('streamers.json', 'w').close()  # create file
-    global tw_clock
-    tw_clock = calendar.timegm(time.gmtime())
+                    offline_channels.append(channel)
+            update_stream_statuses()
+        else:
+            print "streamers.json file does not exist, creating it now"
+            open('streamers.json', 'w').close()  # create file
+            global tw_clock
+            tw_clock = calendar.timegm(time.gmtime())
+    except Exception, e:
+        print "Error in twitch Initial:"
+        print e
 
 
 def get_channel_info(channel):
