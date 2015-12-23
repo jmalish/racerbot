@@ -9,7 +9,7 @@ all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
 timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
-tw_clock = 0
+tw_clock = 0  # used to keep track of how long it's been since last check
 
 
 # used to check if it's been long enough to update streams
