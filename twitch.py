@@ -8,46 +8,48 @@ import time
 all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
+timer = 1  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0  # used to keep track of how long it's been since last check
+joined = False  # bot tells us when it has successfully joined the room
 
 
 # used to check if it's been long enough to update streams
 def timer_check():
-    time_now = calendar.timegm(time.gmtime())
-    if (time_now - tw_clock) > timer:
-        now_streaming = update_stream_statuses()
-        print "Updating twitch, started streaming: " + str(len(now_streaming))
-        return now_streaming
-    else:
-        return []
+    if joined:
+        time_now = calendar.timegm(time.gmtime())
+        if (time_now - tw_clock) > timer:
+            now_streaming = update_stream_statuses()
+            print "Twitch status updated, started streaming: " + str(len(now_streaming))
+            return now_streaming
+        else:
+            return []
 
 
 def update_stream_statuses():
     now_streaming = []  # used for channels that have started streaming
     try:
         # first, see if the live streams are still live
-        for channel in online_channels:
-            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url)
-            # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"] is None:  # channel is no longer live
-                online_channels.remove(channel)  # remove the channel from list of online
-                offline_channels.append(channel)  # and move it to the offline list
-            else:
-                pass  # don't do anything, as the channel is still live
         for channel in offline_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url)
             # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"] is not None:  # channel is now live
-                offline_channels.remove(channel)  # remove the channel from list of offline
-                online_channels.append(channel)  # and move it to the online list
-                # the channel has gone from offline to online, so we need to let the irc room know
-                now_streaming.append(channel)
-                # print "%s has started streaming" % channel  # debugging
+            if channel_details.json()["stream"]:  # channel is no longer live
+                offline_channels.remove(channel)  # remove the channel from list of online
+                online_channels.append(channel)  # and move it to the offline list
             else:
                 pass  # don't do anything, as the channel is still offline
+
+        for channel in online_channels:
+            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
+            channel_details = requests.get(api_url)
+            # read API to see if streamer is live and put them in correct list
+            if channel_details.json()["stream"]:  # channel is now live
+                pass  # don't do anything, as the channel is still online
+            else:
+                online_channels.remove(channel)  # remove the channel from list of offline
+                offline_channels.append(channel)  # and move it to the online list
+                # the channel has gone from offline to online, so we need to let the irc room know
+                now_streaming.append(channel)
         global tw_clock
         tw_clock = calendar.timegm(time.gmtime())
         return now_streaming
@@ -58,6 +60,7 @@ def update_stream_statuses():
 
 # initial setup, should only be run when bot first joins (and again every time it has to rejoin)
 def twitch_initial():
+    print "Initializing twitch"
     try:
         # first, make sure the streamers file actually exists
         if os.path.isfile("streamers.json"):
@@ -65,8 +68,8 @@ def twitch_initial():
             with open('streamers.json') as streamers_json:
                 for channel in json.load(streamers_json):
                     all_channels.append(channel)  # add the current streamer to the list of all channels
-                    offline_channels.append(channel)
-            update_stream_statuses()
+                    offline_channels.append(channel)  # add all channels to offline for right now
+        # we don't want to update lists just yet, that'll be done in the first check
         else:
             print "streamers.json file does not exist, creating it now"
             open('streamers.json', 'w').close()  # create file
@@ -75,6 +78,7 @@ def twitch_initial():
     except Exception, e:
         print "Error in twitch Initial:"
         print e
+    print "Twitch Initialization done"
 
 
 def get_channel_info(channel):
@@ -95,7 +99,7 @@ def get_channel_info(channel):
 
 def add_new_channel(new_channel):
     if new_channel in all_channels:  # if the list already contains the channel, no need to add it
-        return "%s is already in the list of streamers. To see the full list, type '.allstreamers'"
+        return "%s is already in the list of streamers. To see the full list, type '.allstreamers'" % new_channel
     else:
         api_url = "https://api.twitch.tv/kraken/streams/%s" % new_channel
         channel_details = requests.get(api_url)

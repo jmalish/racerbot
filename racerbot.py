@@ -20,8 +20,8 @@ import twitch
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-botnick = "racerbot_py"  # bot name
+channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py2"  # bot name
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -165,7 +165,7 @@ def commands(nick, channel, message):
                 sendmsg(wolfram_results["message"])
         elif message.startswith(".chat"):
             to_send = message.split(".chat")
-            sendmsg((clever.ask(to_send[1].split())))
+            sendmsg((clever.ask(to_send[1].strip())))
         elif message.lower().startswith(".livestreams"):
             twitch.update_stream_statuses()
             if len(twitch.online_channels) > 0:
@@ -308,6 +308,7 @@ while True:  # this is the actual bot itself, everything in this block is what t
         print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
         joined = True  # we've joined the channel
         fishify.fishClock = calendar.timegm(time.gmtime()) - 300
+        twitch.joined = True
 
     if ircmsg.find(' PRIVMSG '):
         nick = ircmsg.split('!')[0][1:]
