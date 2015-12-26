@@ -8,7 +8,7 @@ import time
 # all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 5  # used to tell bot when to check for channel updates (60 = 1 minute)
+timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0  # used to keep track of how long it's been since last check
 joined = False  # bot tells us when it has successfully joined the room
 
@@ -47,7 +47,6 @@ def update_stream_statuses():
             channel_details_json = json.loads(channel_details)
             # read API to see if streamer is live and put them in correct list
             if channel_details_json["stream"] is None:  # channel is not live
-                print "%s is now streaming" % channel  # TODO: Debugging
                 online_channels.remove(channel)  # remove the channel from list of offline
                 offline_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
