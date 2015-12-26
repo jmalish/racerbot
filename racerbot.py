@@ -19,7 +19,7 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join 
+channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
 # channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 botnick = "racerbot_py"  # bot name
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -179,7 +179,7 @@ def commands(nick, channel, message):
             elif message.lower().startswith(".offlinestreams"):
                 if len(twitch.offline_channels) > 0:
                     channels = ""
-                    for tw_channel in twitch.get_all_channels():
+                    for tw_channel in twitch.offline_channels:
                         channels += tw_channel + ", "
                     sendmsg(channels.rstrip().rstrip(','))
                 else:
@@ -216,7 +216,9 @@ def commands(nick, channel, message):
                 # twitch stuff
                 now_streaming = twitch.timer_check()  # check for twitch updates
                 if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+                    print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                     for tw_channel in now_streaming:
+                        print tw_channel
                         stream_info = json.loads(twitch.get_channel_info(tw_channel))
                         sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
                                 (stream_info["display_name"], stream_info["game"], stream_info["status"]))

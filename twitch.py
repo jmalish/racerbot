@@ -8,7 +8,7 @@ import time
 # all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
+timer = 60  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0  # used to keep track of how long it's been since last check
 joined = False  # bot tells us when it has successfully joined the room
 
@@ -28,19 +28,6 @@ def timer_check():
 def update_stream_statuses():
     now_streaming = []  # used for channels that have started streaming
     try:
-        # first, see if the live streams are still live
-        for channel in offline_channels:
-            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url).text
-            channel_details_json = json.loads(channel_details)
-            # read API to see if streamer is live and put them in correct list
-            if channel_details_json["stream"] is None:  # channel is not live
-                pass  # don't do anything, as the channel is still offline
-            else:
-                offline_channels.remove(channel)  # remove the channel from list of online
-                online_channels.append(channel)  # and move it to the offline list
-                now_streaming.append(channel)
-
         for channel in online_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
             channel_details = requests.get(api_url).text
@@ -49,9 +36,23 @@ def update_stream_statuses():
             if channel_details_json["stream"] is None:  # channel is not live
                 online_channels.remove(channel)  # remove the channel from list of offline
                 offline_channels.append(channel)  # and move it to the online list
+                print "%s has stopped streaming" % channel
                 # the channel has gone from offline to online, so we need to let the irc room know
             else:
                 pass  # don't do anything, as the channel is still online
+
+        for channel in offline_channels:
+            api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
+            channel_details = requests.get(api_url).text
+            channel_details_json = json.loads(channel_details)
+            # read API to see if streamer is live and put them in correct list
+            if channel_details_json["stream"] is None:  # channel is not live
+                pass  # don't do anything, as the channel is still offline
+            else:
+                offline_channels.remove(channel)  # remove the channel from list of offline
+                online_channels.append(channel)  # and move it to the online list
+                now_streaming.append(channel)
+                print "%s started streaming" % channel
         global tw_clock
         tw_clock = calendar.timegm(time.gmtime())
 
