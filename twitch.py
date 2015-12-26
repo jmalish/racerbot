@@ -5,10 +5,10 @@ import calendar
 import time
 
 # variables
-all_channels = []  # this holds all channels, on and offline
+# all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
-timer = 120  # used to tell bot when to check for channel updates (60 = 1 minute)
+timer = 5  # used to tell bot when to check for channel updates (60 = 1 minute)
 tw_clock = 0  # used to keep track of how long it's been since last check
 joined = False  # bot tells us when it has successfully joined the room
 
@@ -19,7 +19,7 @@ def timer_check():
         time_now = calendar.timegm(time.gmtime())
         if (time_now - tw_clock) > timer:
             now_streaming = update_stream_statuses()
-            print "Twitch status updated, started streaming: " + str(len(now_streaming))
+            print "Twitch statuses updated, started streaming: " + str(len(now_streaming))
             return now_streaming
         else:
             return []
@@ -31,27 +31,31 @@ def update_stream_statuses():
         # first, see if the live streams are still live
         for channel in offline_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url)
+            channel_details = requests.get(api_url).text
+            channel_details_json = json.loads(channel_details)
             # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"]:  # channel is no longer live
+            if channel_details_json["stream"] is None:  # channel is not live
+                pass  # don't do anything, as the channel is still offline
+            else:
                 offline_channels.remove(channel)  # remove the channel from list of online
                 online_channels.append(channel)  # and move it to the offline list
-            else:
-                pass  # don't do anything, as the channel is still offline
+                now_streaming.append(channel)
 
         for channel in online_channels:
             api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
-            channel_details = requests.get(api_url)
+            channel_details = requests.get(api_url).text
+            channel_details_json = json.loads(channel_details)
             # read API to see if streamer is live and put them in correct list
-            if channel_details.json()["stream"]:  # channel is now live
-                pass  # don't do anything, as the channel is still online
-            else:
+            if channel_details_json["stream"] is None:  # channel is not live
+                print "%s is now streaming" % channel  # TODO: Debugging
                 online_channels.remove(channel)  # remove the channel from list of offline
                 offline_channels.append(channel)  # and move it to the online list
                 # the channel has gone from offline to online, so we need to let the irc room know
-                now_streaming.append(channel)
+            else:
+                pass  # don't do anything, as the channel is still online
         global tw_clock
         tw_clock = calendar.timegm(time.gmtime())
+
         return now_streaming
     except Exception, e:
         print "Error in update_streams_status()"
@@ -67,7 +71,7 @@ def twitch_initial():
             # read the json file of streamers and add them to our list
             with open('streamers.json') as streamers_json:
                 for channel in json.load(streamers_json):
-                    all_channels.append(channel)  # add the current streamer to the list of all channels
+                    # all_channels.append(channel)  # add the current streamer to the list of all channels
                     offline_channels.append(channel)  # add all channels to offline for right now
         # we don't want to update lists just yet, that'll be done in the first check
         else:
@@ -98,16 +102,16 @@ def get_channel_info(channel):
 
 
 def add_new_channel(new_channel):
-    if new_channel in all_channels:  # if the list already contains the channel, no need to add it
+    if new_channel in get_all_channels():  # if the list already contains the channel, no need to add it
         return "%s is already in the list of streamers. To see the full list, type '.allstreamers'" % new_channel
     else:
         api_url = "https://api.twitch.tv/kraken/streams/%s" % new_channel
         channel_details = requests.get(api_url)
         if "error" not in channel_details.json():  # this is a crappy way to do this, I don't know a better way
-            all_channels.append(new_channel)  # add channel to list
+            # all_channels.append(new_channel)  # add channel to list
             offline_channels.append(new_channel)
             with open('streamers.json', 'w') as outfile:  # update file
-                json.dump(all_channels, outfile)  # write all channels to file, including new channel
+                json.dump(get_all_channels(), outfile)  # write all channels to file, including new channel
 
             return "%s added to list of streamers" % new_channel
         else:
@@ -116,8 +120,8 @@ def add_new_channel(new_channel):
 
 def remove_channel(channel_to_remove):
     try:
-        if channel_to_remove in all_channels:  # check to see if channel even exists
-            all_channels.remove(channel_to_remove)  # if it does, remove it from all_channels
+        if channel_to_remove in get_all_channels():  # check to see if channel even exists
+            get_all_channels().remove(channel_to_remove)  # if it does, remove it from all_channels
             if channel_to_remove in online_channels:  # we also need to remove it from whatever list it's in
                 online_channels.remove(channel_to_remove)
             elif channel_to_remove in offline_channels:
@@ -125,7 +129,7 @@ def remove_channel(channel_to_remove):
         else:
             return "%s is not in the list of streamers" % channel_to_remove
         with open('streamers.json', 'w') as outfile:  # update file
-            json.dump(all_channels, outfile)  # write all channels to file, including new channel
+            json.dump(get_all_channels(), outfile)  # write all channels to file, including new channel
         return "%s has been removed from the list of streamers" % channel_to_remove
     except Exception, e:
         print "Error in twitch.remove_channel, possibly because channel doesn't exist"
@@ -141,3 +145,14 @@ def time_since_update():
     m, s = divmod(time_since_tw_update, 60)  # < this converts seconds
     h, m = divmod(m, 60)                  # < to HH:MM:SS form
     return "Time since twitch update: %d:%02d:%02d" % (h, m, s)
+
+
+def get_all_channels():
+    all_channels = []
+    for channel in online_channels:
+        all_channels.append(channel)
+    for channel in offline_channels:
+        all_channels.append(channel)
+
+    all_channels.sort()
+    return all_channels
