@@ -22,7 +22,6 @@ port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
 # channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 botnick = "racerbot_py"  # bot name
-# botnick = "racerbot_py2"  # bot name for testing
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
