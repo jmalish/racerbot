@@ -19,7 +19,6 @@ def timer_check():
         time_now = calendar.timegm(time.gmtime())
         if (time_now - tw_clock) > timer:
             now_streaming = update_stream_statuses()
-            print "Twitch statuses updated, started streaming: " + str(len(now_streaming))
             return now_streaming
         else:
             return []
@@ -36,7 +35,6 @@ def update_stream_statuses():
             if channel_details_json["stream"] is None:  # channel is not live
                 online_channels.remove(channel)  # remove the channel from list of offline
                 offline_channels.append(channel)  # and move it to the online list
-                print "%s has stopped streaming" % channel
                 # the channel has gone from offline to online, so we need to let the irc room know
             else:
                 pass  # don't do anything, as the channel is still online
@@ -52,7 +50,6 @@ def update_stream_statuses():
                 offline_channels.remove(channel)  # remove the channel from list of offline
                 online_channels.append(channel)  # and move it to the online list
                 now_streaming.append(channel)
-                print "%s started streaming" % channel
         global tw_clock
         tw_clock = calendar.timegm(time.gmtime())
 
