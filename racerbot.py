@@ -20,8 +20,8 @@ import twitch
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-# channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-botnick = "racerbot_py"  # bot name
+channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py2"  # bot name
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -315,18 +315,15 @@ while True:  # this is the actual bot itself, everything in this block is what t
     ircmsg = ircmsg.strip('\n\r')  # strip any unnecessary line breaks
     # print(now + " - " + ircmsg)  # print message to console
 
+    # not sure if making this an if/elif block is a good idea, time will tell I suppose
     if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+        print ircmsg
         ping()
-
-    if "/NAMES" in ircmsg:
+    elif "/NAMES" in ircmsg:
         print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
         joined = True  # we've joined the channel
         fishify.fishClock = calendar.timegm(time.gmtime()) - 300
         twitch.joined = True
-
-    if ircmsg.find(' PRIVMSG '):
-        # nick = ircmsg.split("!")[0].strip(":")
-        # channel = ircmsg.split(' PRIVMSG ')[-1].split(' :')[0]
-        # message = ircmsg.split(channel + " :")[1]
+    elif ircmsg.find(' PRIVMSG '):
         commands(ircmsg)
 # </editor-fold desc="Bot">
