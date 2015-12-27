@@ -135,9 +135,9 @@ def query_wolfram_alpha(query):
 
 def commands(ircmessage):
     try:
-        print ircmessage
-
-        if joined:  # there are a few things we don't want to do until joined
+        if not joined:  # there are a few things we don't want to do until joined
+            print ircmessage
+        else:
             now = time.strftime("%I:%M:%S")
             nick = ircmessage.split("!")[0].strip(":")
             message = ircmessage.split(channel + " :")[1]
