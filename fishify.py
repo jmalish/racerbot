@@ -61,7 +61,7 @@ def fish(sentence, isRandomCall):  # takes a word and changes the syllable to a 
             words = sentence.split()  # get number of words by splitting on spaces
 
             random.seed(time.time())  # set seed for random
-            randomIntWord = random.randint(1, len(words) - 1)  # generate a random integer to select word
+            randomIntWord = random.randint(0, len(words) - 1)  # generate a random integer to select word
             chosenWord = words[randomIntWord]  # get the word that correlates to the random integer (location in array)
             print ("I chose '" + chosenWord + "' to fishify")
 
