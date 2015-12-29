@@ -21,8 +21,8 @@ import irc_quotes
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-botnick = "racerbot_py2"
+# channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
