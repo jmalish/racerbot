@@ -20,8 +20,8 @@ import twitch
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-# channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-botnick = "racerbot_py"  # bot name
+channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py2"  # bot name
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -307,21 +307,19 @@ def commands(ircmessage):
 
                         if channel_info:  # if the channel is live, send stream info
                             if channel_info["viewer_count"] == 1:
-                                print("%s is streaming %s | Title: %s | %s viewer" %
-                                      (channel_info["display_name"],
-                                       channel_info["game"],
-                                       channel_info["status"],
-                                       channel_info["viewer_count"]
-                                       )
-                                      )
+                                sendmsg("%s is streaming %s | Title: %s | %s viewer" %
+                                        (channel_info["display_name"],
+                                         channel_info["game"],
+                                         channel_info["status"],
+                                         channel_info["viewer_count"]
+                                         ))
                             else:
-                                print("%s is streaming %s | Title: %s | %s viewers" %
-                                      (channel_info["display_name"],
-                                       channel_info["game"],
-                                       channel_info["status"],
-                                       channel_info["viewer_count"]
-                                       )
-                                      )
+                                sendmsg("%s is streaming %s | Title: %s | %s viewers" %
+                                        (channel_info["display_name"],
+                                         channel_info["game"],
+                                         channel_info["status"],
+                                         channel_info["viewer_count"]
+                                         ))
             except Exception, e:
                 print "Something went wrong in twitch in racerbot"
                 print e
