@@ -1,34 +1,32 @@
-import re
-import twitch
-import json
-import requests
+# import mysql.connector as mysql
+# import json
+#
+# with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
+#     secrets = json.load(jsonfile)
+#
+# sql_user = secrets["mySQLuser"]
+# sql_pass = secrets["mySQLpass"]
+#
+# username = "racer0940"
+#
+# sql_db = mysql.connect(host="jordanmalish.com", user=sql_user, passwd=sql_pass, db="racerbot")
+# sql_cursor = sql_db.cursor()
+#
+# # make sure the user actually said something
+# sql_cursor.execute("SELECT * FROM last_messages where user=%s", (username,))
+#
+# message = sql_cursor.fetchall()[0][2]
+# sql_cursor.close()
+# sql_db.close()
 
-message = "racer0940: http://www.twitch.tv/racer0940"
-channels = ["SuperMCGamer", "tomvsofficial"]
+import irc_quotes
 
+message = ".quote 2"
 
-twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+quotes = irc_quotes.get_quotes()  # get all quotes from the table
+if message.split(".quote")[1].strip():
+    quote_number = int(message.split(".quote")[1].strip()) - 1
+    quote_user = quotes[quote_number][1]  # get each part of quote
+    quote_message = quotes[quote_number][2]
+    print("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
 
-# stream_info = json.loads(twitch.get_channel_info(channels[0]))
-# print stream_info["viewer_count"]
-
-for channel in channels:
-    channel_info = json.loads(twitch.get_channel_info(channel))
-
-    if channel_info:  # if the channel is live, send stream info
-        if channel_info["viewer_count"] == 1:
-            print("%s is streaming %s | Title: %s | %s viewer" %
-                  (channel_info["display_name"],
-                   channel_info["game"],
-                   channel_info["status"],
-                   channel_info["viewer_count"]
-                   )
-                  )
-        else:
-            print("%s is streaming %s | Title: %s | %s viewers" %
-                  (channel_info["display_name"],
-                   channel_info["game"],
-                   channel_info["status"],
-                   channel_info["viewer_count"]
-                   )
-                  )

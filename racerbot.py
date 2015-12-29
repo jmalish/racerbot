@@ -14,22 +14,23 @@ import urllib
 import xml.etree.ElementTree as Etree
 import cleverbot
 import twitch
+import irc_quotes
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-# channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
-botnick = "racerbot_py"
+channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py2"
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     secrets = json.load(jsonfile)
 
-wolfram_api_key = secrets["wolfram"]         # api key for wolfram alpha
-youtubeApiKey = secrets["youtubeKey"]         # api key for youtube
+wolfram_api_key = secrets["wolfram"]    # api key for wolfram alpha
+youtubeApiKey = secrets["youtubeKey"]   # api key for youtube
 
 # other variables
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
@@ -56,6 +57,7 @@ def sendmsg(message):  # function to send message, a little easier than typing i
     now = time.strftime("%I:%M:%S")
     ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
     print "%s: I sent: %s to %s" % (now, message, channel)
+    irc_quotes.add_last_message(botnick, message)  # add bots message to last messages table
 
 
 def get_page_title(site):  # takes what we thinks might be a url and tries to get the page title
@@ -210,6 +212,29 @@ def commands(ircmessage):
                     sendmsg(twitch.remove_channel(channel_to_remove[1]))
                 elif message.lower().startswith(".timesincetwitch"):
                     sendmsg(twitch.time_since_update())
+                elif message.lower().startswith(".quote"):
+                    quotes = irc_quotes.get_quotes()  # get all quotes from the table
+                    if message.split(".quote")[1].strip():
+                        quote_number = int(message.split(".quote")[1].strip()) - 1  # numbers are dumb
+                        quote_user = quotes[quote_number][1]  # get each part of quote
+                        quote_message = quotes[quote_number][2]
+                        sendmsg("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
+                    else:  # no number requested, get and send random quote
+                        random.seed(time.time())
+                        random_int = random.randint(0, len(quotes)-1)  # get a random quote
+                        quote_number = quotes[random_int][0]  # get each part of quote
+                        quote_user = quotes[random_int][1]
+                        quote_message = quotes[random_int][2]
+                        sendmsg("#%s - %s: %s" % (quote_number, quote_user, quote_message))
+                elif message.lower().startswith(".grab "):
+                    try:
+                        user_to_grab = message.split(".grab")[1].strip()  # split off username
+                        if irc_quotes.grab(user_to_grab):
+                            sendmsg("Got it!")
+                        else:
+                            sendmsg("Something went wrong! WHAT DID YOU DO?!")
+                    except Exception, e:
+                        print "I can't grab that!"
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
                     random.seed(time.time())
@@ -322,6 +347,13 @@ def commands(ircmessage):
                                          ))
             except Exception, e:
                 print "Something went wrong in twitch in racerbot"
+                print e
+
+            # ~~~~~~~~ QUOTES
+            try:
+                irc_quotes.add_last_message(nick, message)  # add message to latest messages
+            except Exception, e:
+                print "Something went wrong in quotes"
                 print e
 
             # end of "if joined:"

@@ -14,3 +14,5 @@
 .removestream <channel name> - remove twitch channel from list of channels the bot watches for
 .timesincetwitch - see how long it's been since the bot has updated twitch statuses
 .livestreams - get all channels that are currently live on twitch
+.quote <number> - get a quote, enter a number for a specific quote or leave it blank for a random one
+.grab <user> - Add the last thing someone said to the list of quotes
