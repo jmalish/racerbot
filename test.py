@@ -1,28 +1,34 @@
-from mysql.connector import connection as my_sql
+import re
+import twitch
 import json
+import requests
 
-with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
-    secrets = json.load(jsonfile)
-
-sql_user = secrets["mySQLuser"]  # user for mySQL
-sql_pass = secrets["mySQLpass"]
+message = "racer0940: http://www.twitch.tv/racer0940"
+channels = ["SuperMCGamer", "tomvsofficial"]
 
 
-try:
-    sql_connection = my_sql.MySQLConnection(user=sql_user, password=sql_pass,  # open connection to mySQL
-                                            host="jordanmalish.com", database="racerbot")
+twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
 
-    sql_cursor = sql_connection.cursor()  # cursor for mySQL
+# stream_info = json.loads(twitch.get_channel_info(channels[0]))
+# print stream_info["viewer_count"]
 
-    sql_query = "SELECT * FROM quotes"  # query to be sent to sql
-    sql_cursor.execute(sql_query)  # send query to sql
+for channel in channels:
+    channel_info = json.loads(twitch.get_channel_info(channel))
 
-    for quote in sql_cursor:  # for each response
-        quote_id = quote[0]
-        quote_user = quote[1]
-        quote_text = quote[2]
-        print "#%s - %s: %s" % (quote_id, quote_user, quote_text)
-
-    sql_connection.close()  # close connection to mySQL when done
-except Exception, e:
-    print e
+    if channel_info:  # if the channel is live, send stream info
+        if channel_info["viewer_count"] == 1:
+            print("%s is streaming %s | Title: %s | %s viewer" %
+                  (channel_info["display_name"],
+                   channel_info["game"],
+                   channel_info["status"],
+                   channel_info["viewer_count"]
+                   )
+                  )
+        else:
+            print("%s is streaming %s | Title: %s | %s viewers" %
+                  (channel_info["display_name"],
+                   channel_info["game"],
+                   channel_info["status"],
+                   channel_info["viewer_count"]
+                   )
+                  )

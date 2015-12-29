@@ -19,9 +19,9 @@ import twitch
 # Some basic variables used to configure the bot
 server = "irc.freenode.net"     # irc server
 port = 6667                     # irc port
-# channel = "#racerbottestroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
 channel = "#hoggit.iracing"  # actual channel, uncomment this line when ready to join
-botnick = "racerbot_py"
+# channel = "#racerbot.testroom"  # test room, uncomment next line to overwrite this channel and use 'real' channel
+botnick = "racerbot_py"  # bot name
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # API Key variables
@@ -55,7 +55,7 @@ def ping():  # responds to pings from server
 def sendmsg(message):  # function to send message, a little easier than typing ircsocket over and over
     now = time.strftime("%I:%M:%S")
     ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
-    print "%s: I sent: %s" % (now, message)
+    print "%s: I sent: %s to %s" % (now, message, channel)
 
 
 def get_page_title(site):  # takes what we thinks might be a url and tries to get the page title
@@ -134,147 +134,201 @@ def query_wolfram_alpha(query):
 # </editor-fold desc="Commands">
 
 
-def commands(nick, channel, message):
+def commands(ircmessage):
     try:
-        # this block is all the "dot" commands, where something is requested from the bot by a user
-        if message.lower().find(".here") != -1:  # checks if bot is listening to us
-            sendmsg("Yup!")
-        elif message.lower().startswith(".source"):
-            sendmsg("https://github.com/jmalish/racerbot")
-        elif message.lower().startswith(".help"):
-            sendmsg("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
-        elif message.lower().startswith(".fishify"):
-            sendmsg(fishify.fish(message, False))
-        elif message.lower().startswith(".setfishtimer"):
-            sendmsg(fishify.setTimer(message.split()[1]))
-        elif message.lower().startswith(".getfishtimer"):
-            sendmsg(fishify.getTimer())
-        elif message.lower().startswith(".timesincefish"):
-            sendmsg(fishify.timeSinceFish())
-        elif message.lower().startswith(".setfishify"):
-            fishify.fishWord = message.split()[1]
-            sendmsg("You got it, I'll put %s all over everything now" % fishify.fishWord)
-        elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
-            to_send = message.split(".calc")
-            wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
-            if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
-                sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
-            elif wolfram_results["message"] is None:
-                sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
-                sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
-            else:
-                sendmsg(wolfram_results["message"])
-        elif message.startswith(".chat"):
-            to_send = message.split(".chat")
-            sendmsg((clever.ask(to_send[1].split())))
-        elif message.lower().startswith(".livestreams"):
-            twitch.update_stream_statuses()
-            if len(twitch.online_channels) > 0:
-                for tw_channel in twitch.online_channels:
-                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                    sendmsg("www.twitch.tv/%s is streaming %s | Title: %s" %
-                            (stream_info["display_name"], stream_info["game"], stream_info["status"]))
-            else:
-                sendmsg("No one's streaming!")
-        elif message.lower().startswith(".allstreams"):
-            if twitch.all_channels == 0:
-                sendmsg("I don't have any streamers in my list! Add some with '.addstream <channel name>")
-            else:
-                channels = ""
-                for tw_channel in twitch.all_channels:
-                    channels += tw_channel + ", "
-                sendmsg(channels.rstrip().rstrip(','))
-        elif message.lower().startswith(".addstream"):
-            channel_to_add = message.split(".addstream ")
-            sendmsg(twitch.add_new_channel(channel_to_add[1]))
-        elif message.lower().startswith(".removestream"):
-            channel_to_remove = message.split(".removestream ")
-            sendmsg(twitch.remove_channel(channel_to_remove[1]))
-        elif message.lower().startswith(".timesincetwitch"):
-            sendmsg(twitch.time_since_update())
-        else:  # if no commands are called, then we'll do some fun stuff
-            # fishify stuff
-            random.seed(time.time())
-            randomInt = random.randint(0, 30)
-            if joined:  # there are a few things we don't want to do until joined
-                # fishify stuff
-                if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
-                    if fishify.timerCheck():
-                        try:
-                            sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
-                        except Exception, e:
-                            print "Error in random fishify:"
-                            print e
+        if not joined:  # there are a few things we don't want to do until joined
+            print ircmessage
+        else:
+            now = time.strftime("%I:%M:%S")
+            nick = ircmessage.split("!")[0].strip(":")
+            message = ircmessage.split(channel + " :")[1]
 
-            # twitch stuff
-            now_streaming = twitch.timer_check()  # check for twitch updates
-            if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
-                for tw_channel in now_streaming:
-                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                    sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                            (stream_info["display_name"], stream_info["game"], stream_info["status"]))
-    except Exception, e:
-        print "Something went wrong in dot commands:"
-        print e
+            print "%s - %s: %s" % (now, nick, message)
 
-    # ~~~~~~~~ REDDIT
-    try:
-        # search for subreddits (r/example)
-        subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-        if subreddit_regex:  # if this is true, we found a subreddit name
-            for result in subreddit_regex:
-                if result[1]:  # if result[1] has something in it, that means we have a comments link
-                    thread_id = result[2]  # get thread ID from regex group 3
-                    try:
-                        thread_info = reddit.get_submission(submission_id=thread_id)
-                        sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
-                    except Exception as e:
-                        print e
-                else:  # if not, it's just a subreddit
-                    subreddit_name = result[0]  # get subreddit name from regex group 1
-                    try:
-                        subreddit_title = reddit.get_subreddit(subreddit_name).title
-                        sendmsg("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
-                    except Exception as e:
-                        sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
-                        print e
-    except Exception, e:
-        print "Something went wrong in reddit block:"
-        print e
+            try:
+                # this block is all the "dot" commands, where something is requested from the bot by a user
+                if message.lower().startswith(".here"):  # checks if bot is listening to us
+                    sendmsg("Yup!")
+                elif message.lower().startswith(".source"):
+                    sendmsg("https://github.com/jmalish/racerbot")
+                elif message.lower().startswith(".help"):
+                    sendmsg("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
+                elif message.lower().startswith(".fishify"):
+                    sendmsg(fishify.fish(message, False))
+                elif message.lower().startswith(".setfishtimer"):
+                    sendmsg(fishify.setTimer(message.split()[1]))
+                elif message.lower().startswith(".getfishtimer"):
+                    sendmsg(fishify.getTimer())
+                elif message.lower().startswith(".timesincefish"):
+                    sendmsg(fishify.timeSinceFish())
+                elif message.lower().startswith(".setfishify"):
+                    fishify.fishWord = message.split()[1]
+                    sendmsg("You got it, I'll put %s all over everything now" % fishify.fishWord)
+                elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
+                    to_send = message.split(".calc")
+                    wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
+                    if wolfram_results["isSuggestion"]:  # whatever was sent didn't work
+                        sendmsg("WA says that's not a thing, it suggests: %s" % wolfram_results["suggestion"])
+                    elif wolfram_results["message"] is None:
+                        sendmsg("%s: %s" % (wolfram_results["input_title"], wolfram_results["input_text"]))
+                        sendmsg("%s: %s" % (wolfram_results["output_title"], wolfram_results["output_text"]))
+                    else:
+                        sendmsg(wolfram_results["message"])
+                elif message.startswith(".chat"):
+                    to_send = message.split(".chat")
+                    sendmsg((clever.ask(to_send[1].strip())))
+                elif message.lower().startswith(".livestreams"):
+                    twitch.update_stream_statuses()
+                    if len(twitch.online_channels) > 0:
+                        for tw_channel in twitch.online_channels:
+                            stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                            sendmsg("www.twitch.tv/%s is streaming %s | Title: %s" %
+                                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+                    else:
+                        sendmsg("No one's streaming!")
+                elif message.lower().startswith(".offlinestreams"):
+                    if len(twitch.offline_channels) > 0:
+                        channels = ""
+                        for tw_channel in twitch.offline_channels:
+                            channels += tw_channel + ", "
+                        sendmsg(channels.rstrip().rstrip(','))
+                    else:
+                        sendmsg("There are no offline channels.")
+                elif message.lower().startswith(".allstreams"):
+                    if twitch.get_all_channels() == 0:
+                        sendmsg("I don't have any streamers in my list! Add some with '.addstream <channel name>")
+                    else:
+                        channels = ""
+                        for tw_channel in twitch.get_all_channels():
+                            channels += tw_channel + ", "
+                        sendmsg(channels.rstrip().rstrip(','))
+                elif message.lower().startswith(".addstream"):
+                    channel_to_add = message.split(".addstream ")
+                    sendmsg(twitch.add_new_channel(channel_to_add[1]))
+                elif message.lower().startswith(".removestream"):
+                    channel_to_remove = message.split(".removestream ")
+                    sendmsg(twitch.remove_channel(channel_to_remove[1]))
+                elif message.lower().startswith(".timesincetwitch"):
+                    sendmsg(twitch.time_since_update())
+                else:  # if no commands are called, then we'll do some fun stuff
+                    # fishify stuff
+                    random.seed(time.time())
+                    randomInt = random.randint(0, 30)
+                    # fishify stuff
+                    if randomInt == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
+                        if fishify.timerCheck():
+                            try:
+                                sendmsg(fishify.fish(message, True))  # send the chosen word to fishify()
+                            except Exception, e:
+                                print "Error in random fishify:"
+                                print e
 
-    # ~~~~~~~~ WEBSITE TITLES
-    try:
-        # search for websites
-        url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
-        # here, we're just seeing if the message even contains a url, not concerned with whole url yet
-        if url_regex:  # if this is true, the message has a url in it
-            for word in message.split():
-                word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
-                if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
-                        or ("youtu.be" in word) or ("freenode" in word):
-                    # reddit, twitch, and youtube stuff is already being taken care of
-                    # no need to get it here
-                    # freenode server pings bot every so often, he really wants to get the title of those too
-                    pass
-                elif "." in word:  # look for 'words' with a '.' in the middle
-                    if "@" not in word:  # ignore emails
-                        title = get_page_title(word)
-                        if title:
-                            sendmsg(title)
-    except Exception, e:
-        print "Something went wrong in website title:"
-        print e
+                    # twitch stuff
+                    now_streaming = twitch.timer_check()  # check for twitch updates
+                    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+                        print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                        for tw_channel in now_streaming:
+                            print tw_channel
+                            stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                            sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+            except Exception, e:
+                print "Something went wrong in dot commands:"
+                print e
 
-    # ~~~~~~~~ YOUTUBE
-    try:
-        # regex to get youtube ID, this might need to be cleaned up
-        # will not see links that have an argument before the video id argument (ie ?t=)
-        regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})", message, flags=re.IGNORECASE)
-        if regex_youtube:  # if we find a youtube link
-            for id in regex_youtube:  # foreach youtube link in message
-                sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+            # ~~~~~~~~ REDDIT
+            try:
+                # search for subreddits (r/example)
+                subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+                if subreddit_regex:  # if this is true, we found a subreddit name
+                    for result in subreddit_regex:
+                        if result[1]:  # if result[1] has something in it, that means we have a comments link
+                            thread_id = result[2]  # get thread ID from regex group 3
+                            try:
+                                thread_info = reddit.get_submission(submission_id=thread_id)
+                                sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
+                            except Exception as e:
+                                print e
+                        else:  # if not, it's just a subreddit
+                            subreddit_name = result[0]  # get subreddit name from regex group 1
+                            try:
+                                subreddit_title = reddit.get_subreddit(subreddit_name).title
+                                sendmsg("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
+                            except Exception as e:
+                                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+                                print e
+            except Exception, e:
+                print "Something went wrong in reddit block:"
+                print e
+
+            # ~~~~~~~~ WEBSITE TITLES
+            try:
+                # search for websites
+                url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
+                # here, we're just seeing if the message even contains a url, not concerned with whole url yet
+                if url_regex:  # if this is true, the message has a url in it
+                    for word in message.split():
+                        word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
+                        if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
+                                or ("youtu.be" in word) or ("freenode" in word):
+                            # reddit, twitch, and youtube stuff is already being taken care of
+                            # no need to get it here
+                            # freenode server pings bot every so often, he really wants to get the title of those too
+                            pass
+                        elif "." in word:  # look for 'words' with a '.' in the middle
+                            if "@" not in word:  # ignore emails
+                                title = get_page_title(word)
+                                if title:
+                                    sendmsg(title)
+            except Exception, e:
+                print "Something went wrong in website title:"
+                print e
+
+            # ~~~~~~~~ YOUTUBE
+            try:
+                # regex to get youtube ID, this might need to be cleaned up
+                # will not see links that have an argument before the video id argument (ie ?t=)
+                regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})", message, flags=re.IGNORECASE)
+                if regex_youtube:  # if we find a youtube link
+                    for id in regex_youtube:  # foreach youtube link in message
+                        sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+            except Exception, e:
+                print "Something went wrong in youtube:"
+                print e
+
+            # ~~~~~~~~~~~ TWITCH
+            try:
+                # regex to find twitch channel info
+                twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+
+                if twitch_regex:
+                    for username in twitch_regex:  # for each username in the message
+                        channel_info = json.loads(twitch.get_channel_info(username))
+
+                        if channel_info:  # if the channel is live, send stream info
+                            if channel_info["viewer_count"] == 1:
+                                print("%s is streaming %s | Title: %s | %s viewer" %
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]
+                                       )
+                                      )
+                            else:
+                                print("%s is streaming %s | Title: %s | %s viewers" %
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]
+                                       )
+                                      )
+            except Exception, e:
+                print "Something went wrong in twitch in racerbot"
+                print e
+
+            # end of "if joined:"
     except Exception, e:
-        print "Something went wrong in youtube:"
+        print "Error in commands():"
         print e
 
 # </editor-fold desc="Commands">
@@ -292,21 +346,17 @@ joinchan(channel)  # initial channel join
 while True:  # this is the actual bot itself, everything in this block is what the bot uses
     ircmsg = ircsock.recv(2048)  # receive data from server
     ircmsg = ircmsg.strip('\n\r')  # strip any unnecessary line breaks
-    now = time.strftime("%I:%M:%S")
-    print(now + " - " + ircmsg)  # print message to console
+    # print(now + " - " + ircmsg)  # print message to console
 
+    # not sure if making this an if/elif block is a good idea, time will tell I suppose
     if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+        print ircmsg
         ping()
-
-    if "/NAMES" in ircmsg:
+    elif "/NAMES" in ircmsg:
         print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
         joined = True  # we've joined the channel
         fishify.fishClock = calendar.timegm(time.gmtime()) - 300
-
-    if ircmsg.find(' PRIVMSG '):
-        nick = ircmsg.split('!')[0][1:]
-        channel = ircmsg.split(' PRIVMSG ')[-1].split(' :')[0]
-        message = ircmsg.split(' :')[-1]
-
-        commands(nick, channel, message)
+        twitch.joined = True
+    elif ircmsg.find(' PRIVMSG '):
+        commands(ircmsg)
 # </editor-fold desc="Bot">
