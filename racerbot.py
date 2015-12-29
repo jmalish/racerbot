@@ -294,7 +294,38 @@ def commands(ircmessage):
             except Exception, e:
                 print "Something went wrong in youtube:"
                 print e
-        # end of "if joined:"
+
+            # ~~~~~~~~~~~ TWITCH
+            try:
+                # regex to find twitch channel info
+                twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+
+                if twitch_regex:
+                    for username in twitch_regex:  # for each username in the message
+                        channel_info = json.loads(twitch.get_channel_info(username))
+
+                        if channel_info:  # if the channel is live, send stream info
+                            if channel_info["viewer_count"] == 1:
+                                print("%s is streaming %s | Title: %s | %s viewer" %
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]
+                                       )
+                                      )
+                            else:
+                                print("%s is streaming %s | Title: %s | %s viewers" %
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]
+                                       )
+                                      )
+            except Exception, e:
+                print "Something went wrong in twitch in racerbot"
+                print e
+
+            # end of "if joined:"
     except Exception, e:
         print "Error in commands():"
         print e

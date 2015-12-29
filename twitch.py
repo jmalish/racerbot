@@ -84,18 +84,21 @@ def twitch_initial():
 
 def get_channel_info(channel):
     try:
-        api_url = "https://api.twitch.tv/kraken/channels/%s" % channel
-        stream_details = requests.get(api_url)
-        stream_status = stream_details.json()["status"]  # this is the title of the stream
-        stream_game = stream_details.json()["game"]  # game the streamer is playing
-        stream_display_name = stream_details.json()["display_name"]  # name of streamer with correct capitalization
+        api_url = "https://api.twitch.tv/kraken/streams/%s" % channel
+        channel_details = json.loads(requests.get(api_url).text)["stream"]
+        stream_game = channel_details["game"]
+        stream_status = channel_details["channel"]["status"]
+        stream_display_name = channel_details["channel"]["display_name"]
+        stream_viewers = channel_details["viewers"]
         stream_json = json.dumps({"status": stream_status,
                                   "game": stream_game,
-                                  "display_name": stream_display_name})
+                                  "display_name": stream_display_name,
+                                  "viewer_count": stream_viewers})
         return stream_json
     except Exception, e:
-        print "Error in get_channel_title(channel)"
+        print "Error in get_channel_title(%s), channel may not exist or is offline" % channel
         print e
+        return False
 
 
 def add_new_channel(new_channel):
