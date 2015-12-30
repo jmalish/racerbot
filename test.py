@@ -1,34 +1,32 @@
-import re
-import twitch
+import mysql.connector as mysql
 import json
-import requests
+from datetime import datetime
 
-message = "racer0940: http://www.twitch.tv/racer0940"
-channels = ["SuperMCGamer", "tomvsofficial"]
+# with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
+#     secrets = json.load(jsonfile)
+#
+# sql_user = secrets["mySQLuser"]
+# sql_pass = secrets["mySQLpass"]
+#
+# username = "racer0940"
+#
+# sql_db = mysql.connect(host="jordanmalish.com", user=sql_user, passwd=sql_pass, db="racerbot")
+# sql_cursor = sql_db.cursor()
+#
+# # make sure the user actually said something
+# sql_cursor.execute("SELECT * FROM last_messages where user=%s", (username,))
+#
+# message = sql_cursor.fetchone()
+#
+# sql_cursor.close()
+# sql_db.close()
+
+import irc_quotes
 
 
-twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+message = ".lastseen  racer0940"
 
-# stream_info = json.loads(twitch.get_channel_info(channels[0]))
-# print stream_info["viewer_count"]
+user = message.split(".lastseen ")[1].strip()
 
-for channel in channels:
-    channel_info = json.loads(twitch.get_channel_info(channel))
+print user
 
-    if channel_info:  # if the channel is live, send stream info
-        if channel_info["viewer_count"] == 1:
-            print("%s is streaming %s | Title: %s | %s viewer" %
-                  (channel_info["display_name"],
-                   channel_info["game"],
-                   channel_info["status"],
-                   channel_info["viewer_count"]
-                   )
-                  )
-        else:
-            print("%s is streaming %s | Title: %s | %s viewers" %
-                  (channel_info["display_name"],
-                   channel_info["game"],
-                   channel_info["status"],
-                   channel_info["viewer_count"]
-                   )
-                  )
