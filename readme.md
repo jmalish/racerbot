@@ -12,4 +12,3 @@ racerbot is written in Python 2.7, running it with 3.0 and up will cause issues
   - cleverbot: it talks!
   - mysql-connector-python: used for quote system (may need to use 'mysql-connector-python --allow-external mysql-connector-python')
   - PyHyphen: Used in fishify for breaking words down into syllables
-  
