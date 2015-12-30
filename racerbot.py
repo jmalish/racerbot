@@ -235,6 +235,12 @@ def commands(ircmessage):
                             sendmsg("Something went wrong! WHAT DID YOU DO?!")
                     except Exception, e:
                         print "I can't grab that!"
+                elif message.lower().startswith(".lastseen "):
+                    user = message.split(".lastseen ")[1].strip()
+                    if irc_quotes.last_seen(user):
+                        sendmsg(irc_quotes.last_seen(user))
+                    else:
+                        sendmsg("%s? Oh, you don't want to know what they said..." % user)
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
                     random.seed(time.time())

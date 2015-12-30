@@ -1,7 +1,6 @@
 import mysql.connector as mysql
 import json
-import time
-import random
+from datetime import datetime
 
 # API Key variables
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
@@ -82,4 +81,37 @@ def grab(username):
             return False
     except Exception, e:
         print "Something went wrong in grab(%s)" % username
+        print e
+
+
+def last_seen(username):
+    try:
+        sql_db = mysql.connect(host="jordanmalish.com", user=sql_user, passwd=sql_pass, db="racerbot")
+        sql_cursor = sql_db.cursor()
+
+        # make sure the user actually said something
+        sql_cursor.execute("SELECT * FROM last_messages where user=%s", (username,))
+
+        message = sql_cursor.fetchone()
+
+        if message:  # make sure user exists in db
+            message_time = message[3]  # get time of message
+            message_text = message[2]  # get text of message
+            message_user = message[1]  # get user of message
+
+            sql_cursor.close()
+            sql_db.close()
+
+            time_now = datetime.now()  # get current time
+            time_diff = time_now - message_time  # subtract time of message from current time
+
+            # I split off the milliseconds on 'time_diff', I'm sure there's a better way to do that though
+            return '%s was last seen %s ago saying "%s"' %\
+                   (message_user, str(time_diff).split(".")[0], message_text)
+        else:  # if user does not exist, return false
+            sql_cursor.close()
+            sql_db.close()
+            return False
+    except Exception, e:
+        print "Something went wrong in last_seen(%s)" % username
         print e
