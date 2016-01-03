@@ -82,7 +82,7 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
 
 def twitch_check():  # check for twitch updates
     now_streaming = twitch.timer_check()  # check for twitch updates
-    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+    if len(now_streaming):  # if this has anything in it, someone's started streaming
         print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         for tw_channel in now_streaming:
             print tw_channel
