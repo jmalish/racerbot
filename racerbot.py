@@ -80,6 +80,17 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
         return False
 
 
+def twitch_check():  # check for twitch updates
+    now_streaming = twitch.timer_check()  # check for twitch updates
+    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
+        print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        for tw_channel in now_streaming:
+            print tw_channel
+            stream_info = json.loads(twitch.get_channel_info(tw_channel))
+            sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+
+
 def get_yt_video_info(video_id):  # get video info of youtube video
     try:
         # URL to get info for video
@@ -255,14 +266,7 @@ def commands(ircmessage):
                                 print e
 
                     # twitch stuff
-                    now_streaming = twitch.timer_check()  # check for twitch updates
-                    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
-                        print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                        for tw_channel in now_streaming:
-                            print tw_channel
-                            stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                            sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+                    twitch_check()
             except Exception, e:
                 print "Something went wrong in dot commands:"
                 print e
@@ -388,6 +392,7 @@ while True:  # this is the actual bot itself, everything in this block is what t
     if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
         print ircmsg
         ping()
+        twitch_check()
     elif "/NAMES" in ircmsg:
         print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
         joined = True  # we've joined the channel
