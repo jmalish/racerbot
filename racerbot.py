@@ -81,14 +81,18 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
 
 
 def twitch_check():  # check for twitch updates
-    now_streaming = twitch.timer_check()  # check for twitch updates
-    if len(now_streaming):  # if this has anything in it, someone's started streaming
-        print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        for tw_channel in now_streaming:
-            print tw_channel
-            stream_info = json.loads(twitch.get_channel_info(tw_channel))
-            sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+    try:
+        now_streaming = twitch.timer_check()  # check for twitch updates
+        if len(now_streaming):  # if this has anything in it, someone's started streaming
+            print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+            for tw_channel in now_streaming:
+                print tw_channel
+                stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                        (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+    except Exception, e:
+        print "Error in twitch_check() in racerbot.py"
+        print e
 
 
 def get_yt_video_info(video_id):  # get video info of youtube video
@@ -102,6 +106,7 @@ def get_yt_video_info(video_id):  # get video info of youtube video
         vid_view_count = video_details.json()["items"][0]["statistics"]["viewCount"]  # get view count of video
         return "Title: %s | Views: %s | Channel: %s" % (vid_title, vid_view_count, vid_channel)
     except Exception, e:
+        print "Error in get_yt_video_info(video_id) in racerbot.py"
         print e
 
 
@@ -388,16 +393,20 @@ while True:  # this is the actual bot itself, everything in this block is what t
     ircmsg = ircmsg.strip('\n\r')  # strip any unnecessary line breaks
     # print(now + " - " + ircmsg)  # print message to console
 
-    # not sure if making this an if/elif block is a good idea, time will tell I suppose
-    if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-        print ircmsg
-        ping()
-        twitch_check()
-    elif "/NAMES" in ircmsg:
-        print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
-        joined = True  # we've joined the channel
-        fishify.fishClock = calendar.timegm(time.gmtime()) - 300
-        twitch.joined = True
-    elif ircmsg.find(' PRIVMSG '):
-        commands(ircmsg)
+    try:
+        # not sure if making this an if/elif block is a good idea, time will tell I suppose
+        if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+            print ircmsg
+            ping()
+            twitch_check()
+        elif "/NAMES" in ircmsg:
+            print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
+            joined = True  # we've joined the channel
+            fishify.fishClock = calendar.timegm(time.gmtime()) - 300
+            twitch.joined = True
+        elif ircmsg.find(' PRIVMSG '):
+            commands(ircmsg)
+    except Exception, e:
+        print "Uncaught Error in while True loop"
+        print e
 # </editor-fold desc="Bot">
