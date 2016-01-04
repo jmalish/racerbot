@@ -5,7 +5,6 @@ import calendar
 import time
 
 # variables
-# all_channels = []  # this holds all channels, on and offline
 online_channels = []  # this holds all channels that are currently live
 offline_channels = []  # this holds all channels that are currently offline
 timer = 60  # used to tell bot when to check for channel updates (60 = 1 minute)
@@ -171,5 +170,5 @@ def get_vod_info(vod_id):
                                "display_name": vod_channel})
 
         return vod_json
-    except Exception, e:
-        pass  # An exception here isn't bad, it just means an invalid VOD ID was given
+    except Exception, error:
+        print error  # An exception here isn't bad, it just means an invalid VOD ID was given
