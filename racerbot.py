@@ -54,6 +54,7 @@ def ping():  # responds to pings from server
 
 
 def sendmsg(message):  # function to send message, a little easier than typing ircsocket over and over
+    message = message.encode('utf-8')
     now = time.strftime("%I:%M:%S")
     ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
     print "%s: I sent: %s to %s" % (now, message, channel)
@@ -80,6 +81,21 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
         return False
 
 
+def twitch_check():  # check for twitch updates
+    try:
+        now_streaming = twitch.timer_check()  # check for twitch updates
+        if len(now_streaming):  # if this has anything in it, someone's started streaming
+            print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+            for tw_channel in now_streaming:
+                print tw_channel
+                stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                        (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+    except Exception, e:
+        print "Error in twitch_check() in racerbot.py"
+        print e
+
+
 def get_yt_video_info(video_id):  # get video info of youtube video
     try:
         # URL to get info for video
@@ -91,6 +107,7 @@ def get_yt_video_info(video_id):  # get video info of youtube video
         vid_view_count = video_details.json()["items"][0]["statistics"]["viewCount"]  # get view count of video
         return "Title: %s | Views: %s | Channel: %s" % (vid_title, vid_view_count, vid_channel)
     except Exception, e:
+        print "Error in get_yt_video_info(video_id) in racerbot.py"
         print e
 
 
@@ -133,9 +150,9 @@ def query_wolfram_alpha(query):
                                    "message": "You broke Wolfram, way to go... jerk"})
         return wolfram_json
 # </editor-fold desc="Basic Functions">
-# </editor-fold desc="Commands">
 
 
+# <editor-fold desc="Commands">
 def commands(ircmessage):
     try:
         if not joined:  # there are a few things we don't want to do until joined
@@ -147,6 +164,7 @@ def commands(ircmessage):
 
             print "%s - %s: %s" % (now, nick, message)
 
+            # <editor-fold desc="dot commands">
             try:
                 # this block is all the "dot" commands, where something is requested from the bot by a user
                 if message.lower().startswith(".here"):  # checks if bot is listening to us
@@ -255,105 +273,109 @@ def commands(ircmessage):
                                 print e
 
                     # twitch stuff
-                    now_streaming = twitch.timer_check()  # check for twitch updates
-                    if len(now_streaming) > 0:  # if this has anything in it, someone's started streaming
-                        print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                        for tw_channel in now_streaming:
-                            print tw_channel
-                            stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                            sendmsg("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                                    (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+                    twitch_check()
             except Exception, e:
                 print "Something went wrong in dot commands:"
                 print e
+            # </editor-fold desc="dot commands">
 
-            # ~~~~~~~~ REDDIT
-            try:
-                # search for subreddits (r/example)
-                subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-                if subreddit_regex:  # if this is true, we found a subreddit name
-                    for result in subreddit_regex:
-                        if result[1]:  # if result[1] has something in it, that means we have a comments link
-                            thread_id = result[2]  # get thread ID from regex group 3
-                            try:
-                                thread_info = reddit.get_submission(submission_id=thread_id)
-                                sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
-                            except Exception as e:
-                                print e
-                        else:  # if not, it's just a subreddit
-                            subreddit_name = result[0]  # get subreddit name from regex group 1
-                            try:
-                                subreddit_title = reddit.get_subreddit(subreddit_name).title
-                                sendmsg("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
-                            except Exception as e:
-                                sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
-                                print e
-            except Exception, e:
-                print "Something went wrong in reddit block:"
-                print e
+            if "nospoil" not in message:  # this lets a user post a link without the bot giving info on it
+                # <editor-fold desc="regex stuff">
+                # ~~~~~~~~ REDDIT
+                try:
+                    # search for subreddits (r/example)
+                    subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+                    if subreddit_regex:  # if this is true, we found a subreddit name
+                        for result in subreddit_regex:
+                            if result[1]:  # if result[1] has something in it, that means we have a comments link
+                                thread_id = result[2]  # get thread ID from regex group 3
+                                try:
+                                    thread_info = reddit.get_submission(submission_id=thread_id)
+                                    sendmsg(str(thread_info.title) + " | " + str(thread_info.subreddit))
+                                except Exception as e:
+                                    print e
+                            else:  # if not, it's just a subreddit
+                                subreddit_name = result[0]  # get subreddit name from regex group 1
+                                try:
+                                    subreddit_title = reddit.get_subreddit(subreddit_name).title
+                                    sendmsg("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
+                                except Exception as e:
+                                    sendmsg("http://www.reddit.com/r/" + subreddit_name + " - That's not a real subreddit...")
+                                    print e
+                except Exception, e:
+                    print "Something went wrong in reddit block:"
+                    print e
 
-            # ~~~~~~~~ WEBSITE TITLES
-            try:
-                # search for websites
-                url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
-                # here, we're just seeing if the message even contains a url, not concerned with whole url yet
-                if url_regex:  # if this is true, the message has a url in it
-                    for word in message.split():
-                        word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
-                        if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
-                                or ("youtu.be" in word) or ("freenode" in word):
-                            # reddit, twitch, and youtube stuff is already being taken care of
-                            # no need to get it here
-                            # freenode server pings bot every so often, he really wants to get the title of those too
-                            pass
-                        elif "." in word:  # look for 'words' with a '.' in the middle
-                            if "@" not in word:  # ignore emails
-                                title = get_page_title(word)
-                                if title:
-                                    sendmsg(title)
-            except Exception, e:
-                print "Something went wrong in website title:"
-                print e
+                # ~~~~~~~~ WEBSITE TITLES
+                try:
+                    # search for websites
+                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
+                    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
+                    if url_regex:  # if this is true, the message has a url in it
+                        for word in message.split():
+                            word = word.strip(',').strip('.')  # get rid of trailing commas or periods (ie end of sentence)
+                            if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
+                                    or ("youtu.be" in word) or ("freenode" in word):
+                                # reddit, twitch, and youtube stuff is already being taken care of
+                                # no need to get it here
+                                # freenode server pings bot every so often, he really wants to get the title of those too
+                                pass
+                            elif "." in word:  # look for 'words' with a '.' in the middle
+                                if "@" not in word:  # ignore emails
+                                    title = get_page_title(word)
+                                    if title:
+                                        sendmsg(title)
+                except Exception, e:
+                    print "Something went wrong in website title:"
+                    print e
 
-            # ~~~~~~~~ YOUTUBE
-            try:
-                # regex to get youtube ID, this might need to be cleaned up
-                # will not see links that have an argument before the video id argument (ie ?t=)
-                regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})", message, flags=re.IGNORECASE)
-                if regex_youtube:  # if we find a youtube link
-                    for id in regex_youtube:  # foreach youtube link in message
-                        sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
-            except Exception, e:
-                print "Something went wrong in youtube:"
-                print e
+                # ~~~~~~~~ YOUTUBE
+                try:
+                    # regex to get youtube ID, this might need to be cleaned up
+                    # will not see links that have an argument before the video id argument (ie ?t=)
+                    regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})",
+                                               message, flags=re.IGNORECASE)
+                    if regex_youtube:  # if we find a youtube link
+                        for id in regex_youtube:  # foreach youtube link in message
+                            sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
+                except Exception, e:
+                    print "Something went wrong in youtube:"
+                    print e
 
-            # ~~~~~~~~~~~ TWITCH
-            try:
-                # regex to find twitch channel info
-                twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+                # ~~~~~~~~~~~ TWITCH
+                try:
+                    # regex to find twitch info
+                    twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)(\/v\/([0-9]{8}))?",
+                                              message, flags=re.IGNORECASE)
 
-                if twitch_regex:
-                    for username in twitch_regex:  # for each username in the message
-                        channel_info = json.loads(twitch.get_channel_info(username))
-
-                        if channel_info:  # if the channel is live, send stream info
-                            if channel_info["viewer_count"] == 1:
-                                sendmsg("%s is streaming %s | Title: %s | %s viewer" %
-                                        (channel_info["display_name"],
-                                         channel_info["game"],
-                                         channel_info["status"],
-                                         channel_info["viewer_count"]
-                                         ))
-                            else:
-                                sendmsg("%s is streaming %s | Title: %s | %s viewers" %
-                                        (channel_info["display_name"],
-                                         channel_info["game"],
-                                         channel_info["status"],
-                                         channel_info["viewer_count"]
-                                         ))
-            except Exception, e:
-                print "Something went wrong in twitch in racerbot"
-                print e
+                    for link in twitch_regex:
+                        if link[2]:  # main page of stream linked
+                            vod_id = link[2]
+                            vod_details = twitch.get_vod_info(vod_id)
+                            if vod_details:
+                                vod_info_json = json.loads(twitch.get_vod_info(vod_id))
+                                sendmsg("Title: %s | Game: %s | Channel: %s" %
+                                      (vod_info_json["title"], vod_info_json["game"], vod_info_json["display_name"]))
+                        else:  # vod linked
+                            channel_info = json.loads(twitch.get_channel_info(link[0]))
+                            if channel_info:  # if the channel is live, send stream info
+                                if channel_info["viewer_count"] == 1:
+                                    sendmsg("%s is streaming %s | Title: %s | %s viewer" %
+                                          (channel_info["display_name"],
+                                           channel_info["game"],
+                                           channel_info["status"],
+                                           channel_info["viewer_count"]
+                                           ))
+                                else:
+                                    sendmsg("%s is streaming %s | Title: %s | %s viewers" %
+                                          (channel_info["display_name"],
+                                           channel_info["game"],
+                                           channel_info["status"],
+                                           channel_info["viewer_count"]))
+                except Exception, e:
+                    print "Something went wrong in twitch in racerbot"
+                    print e
+            # </editor-fold desc="regex stuff">
 
             # ~~~~~~~~ QUOTES
             try:
@@ -366,8 +388,8 @@ def commands(ircmessage):
     except Exception, e:
         print "Error in commands():"
         print e
-
 # </editor-fold desc="Commands">
+
 # <editor-fold desc="Bot">
 # setting up socket
 print "Attempting to connect to server"
@@ -384,15 +406,20 @@ while True:  # this is the actual bot itself, everything in this block is what t
     ircmsg = ircmsg.strip('\n\r')  # strip any unnecessary line breaks
     # print(now + " - " + ircmsg)  # print message to console
 
-    # not sure if making this an if/elif block is a good idea, time will tell I suppose
-    if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-        print ircmsg
-        ping()
-    elif "/NAMES" in ircmsg:
-        print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
-        joined = True  # we've joined the channel
-        fishify.fishClock = calendar.timegm(time.gmtime()) - 300
-        twitch.joined = True
-    elif ircmsg.find(' PRIVMSG '):
-        commands(ircmsg)
+    try:
+        # not sure if making this an if/elif block is a good idea, time will tell I suppose
+        if ircmsg.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+            print ircmsg
+            ping()
+            twitch_check()
+        elif "/NAMES" in ircmsg:
+            print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
+            joined = True  # we've joined the channel
+            fishify.fishClock = calendar.timegm(time.gmtime()) - 300
+            twitch.joined = True
+        elif ircmsg.find(' PRIVMSG '):
+            commands(ircmsg)
+    except Exception, e:
+        print "Uncaught Error in while True loop"
+        print e
 # </editor-fold desc="Bot">

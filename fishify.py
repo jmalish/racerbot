@@ -1,11 +1,9 @@
-__author__ = 'Jordan "racer0940" Malish'
 # imports
 import random
 import time
 import calendar
-import urllib
-import xml.etree.ElementTree as ET
 import json
+from hyphen import Hyphenator
 
 # get dictionary API key
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
@@ -17,6 +15,7 @@ dictionaryApiKey = data["dictionary"]   # api key for dictionary
 fishWord = "fish"  # used in fish() as the word that replaces the selected syllable
 fishTimer = 300     # used to keep fishify from running every other message (default is 5 min)
 fishClock = 000     # used to see how long it's been since last fishify
+hyphenator = Hyphenator('en_US')  # Hyphenator setup
 
 
 # checks to see if it's been long enough since last fishify
@@ -56,7 +55,7 @@ def timeSinceFish():
 
 # actual fishify function
 def fish(sentence, isRandomCall):  # takes a word and changes the syllable to a given word
-    for i in range(0, 5):  # let the bot try five times to find a word, this is so it doesn't give up on first try
+    for j in range(0, 5):  # let the bot try five times to find a word, this is so it doesn't give up on first try
         try:
             words = sentence.split()  # get number of words by splitting on spaces
 
@@ -65,16 +64,11 @@ def fish(sentence, isRandomCall):  # takes a word and changes the syllable to a 
             chosenWord = words[randomIntWord]  # get the word that correlates to the random integer (location in array)
             print ("I chose '" + chosenWord + "' to fishify")
 
-            dictLink = "http://www.dictionaryapi.com/api/v1/references/collegiate/xml/" + \
-                       chosenWord + "?key=" + dictionaryApiKey
+            chosen_word_unicode = chosenWord.decode('unicode-escape')
+            syllables = hyphenator.syllables(chosen_word_unicode)
 
-            tree = ET.parse(urllib.urlopen(dictLink))
-            root = tree.getroot()
-
-            syllables = root[0].find("hw").text.split('*')  # split word into syllables
-            randomIntSyl = random.randint(0, len(syllables) - 1)  # generate a random integer to select syllable
-
-            syllables[randomIntSyl] = fishWord  # replace syllable with fishify word
+            random_int_syl = random.randint(0, len(syllables) - 1)  # generate a random integer to select syllable
+            syllables[random_int_syl] = fishWord  # replace syllable with fishify word
 
             newWord = ""
             for i in range(len(syllables)):
@@ -95,9 +89,9 @@ def fish(sentence, isRandomCall):  # takes a word and changes the syllable to a 
                 fishClock = calendar.timegm(time.gmtime())
             return newSentence
         except Exception as e:  # catch if the selected word doesn't exist in the dictionary
-            i += 1
+            j += 1
             time.sleep(.5)  # wait a sec to give random seed a chance to change
-            if i == 3:
+            if j == 3:
                 # if it tried all three times and failed, tell chat what happened
                 print "Error in fishify(): " + e.message
                 return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"

@@ -156,3 +156,20 @@ def get_all_channels():
 
     all_channels.sort()
     return all_channels
+
+
+def get_vod_info(vod_id):
+    try:
+        api_url = "https://api.twitch.tv/kraken/videos/v" + vod_id
+        vod_details = requests.get(api_url).text
+        vod_details_json = json.loads(vod_details)
+        vod_title = vod_details_json["title"]
+        vod_game = vod_details_json["game"]
+        vod_channel = vod_details_json["channel"]["display_name"]
+        vod_json = json.dumps({"title": vod_title,
+                               "game": vod_game,
+                               "display_name": vod_channel})
+
+        return vod_json
+    except Exception, e:
+        pass  # An exception here isn't bad, it just means an invalid VOD ID was given
