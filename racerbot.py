@@ -149,9 +149,9 @@ def query_wolfram_alpha(query):
                                    "message": "You broke Wolfram, way to go... jerk"})
         return wolfram_json
 # </editor-fold desc="Basic Functions">
-# </editor-fold desc="Commands">
 
 
+# <editor-fold desc="Commands">
 def commands(ircmessage):
     try:
         if not joined:  # there are a few things we don't want to do until joined
@@ -163,6 +163,7 @@ def commands(ircmessage):
 
             print "%s - %s: %s" % (now, nick, message)
 
+            # <editor-fold desc="dot commands">
             try:
                 # this block is all the "dot" commands, where something is requested from the bot by a user
                 if message.lower().startswith(".here"):  # checks if bot is listening to us
@@ -275,7 +276,9 @@ def commands(ircmessage):
             except Exception, e:
                 print "Something went wrong in dot commands:"
                 print e
+            # </editor-fold desc="dot commands">
 
+            # <editor-fold desc="regex stuff">
             # ~~~~~~~~ REDDIT
             try:
                 # search for subreddits (r/example)
@@ -328,7 +331,8 @@ def commands(ircmessage):
             try:
                 # regex to get youtube ID, this might need to be cleaned up
                 # will not see links that have an argument before the video id argument (ie ?t=)
-                regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})", message, flags=re.IGNORECASE)
+                regex_youtube = re.findall("youtu\.?be(.com)?/?(watch\?v=)?([_a-zA-Z0-9\-]{11})",
+                                           message, flags=re.IGNORECASE)
                 if regex_youtube:  # if we find a youtube link
                     for id in regex_youtube:  # foreach youtube link in message
                         sendmsg(get_yt_video_info(id[2]))  # pass the video ID to function
@@ -338,31 +342,38 @@ def commands(ircmessage):
 
             # ~~~~~~~~~~~ TWITCH
             try:
-                # regex to find twitch channel info
-                twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)", message, flags=re.IGNORECASE)
+                # regex to find twitch info
+                twitch_regex = re.findall("twitch.tv\/([a-zA-Z0-9\_\+]+)(\/v\/([0-9]{8}))?",
+                                          message, flags=re.IGNORECASE)
 
-                if twitch_regex:
-                    for username in twitch_regex:  # for each username in the message
-                        channel_info = json.loads(twitch.get_channel_info(username))
-
+                for link in twitch_regex:
+                    if link[2]:  # main page of stream linked
+                        vod_id = link[2]
+                        vod_details = twitch.get_vod_info(vod_id)
+                        if vod_details:
+                            vod_info_json = json.loads(twitch.get_vod_info(vod_id))
+                            sendmsg("Title: %s | Game: %s | Channel: %s" %
+                                  (vod_info_json["title"], vod_info_json["game"], vod_info_json["display_name"]))
+                    else:  # vod linked
+                        channel_info = json.loads(twitch.get_channel_info(link[0]))
                         if channel_info:  # if the channel is live, send stream info
                             if channel_info["viewer_count"] == 1:
                                 sendmsg("%s is streaming %s | Title: %s | %s viewer" %
-                                        (channel_info["display_name"],
-                                         channel_info["game"],
-                                         channel_info["status"],
-                                         channel_info["viewer_count"]
-                                         ))
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]
+                                       ))
                             else:
                                 sendmsg("%s is streaming %s | Title: %s | %s viewers" %
-                                        (channel_info["display_name"],
-                                         channel_info["game"],
-                                         channel_info["status"],
-                                         channel_info["viewer_count"]
-                                         ))
+                                      (channel_info["display_name"],
+                                       channel_info["game"],
+                                       channel_info["status"],
+                                       channel_info["viewer_count"]))
             except Exception, e:
                 print "Something went wrong in twitch in racerbot"
                 print e
+            # </editor-fold desc="regex stuff">
 
             # ~~~~~~~~ QUOTES
             try:
@@ -375,8 +386,8 @@ def commands(ircmessage):
     except Exception, e:
         print "Error in commands():"
         print e
-
 # </editor-fold desc="Commands">
+
 # <editor-fold desc="Bot">
 # setting up socket
 print "Attempting to connect to server"
