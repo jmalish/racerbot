@@ -66,6 +66,13 @@ def send_message(message):  # function to send message, a little easier than typ
     irc_quotes.add_last_message(botnick, message)  # add bots message to last messages table
 
 
+def private_message(message, user):  # function to send message, a little easier than typing ircsocket over and over
+    message = message.encode('utf-8')
+    now = time.strftime("%I:%M:%S")
+    ircsock.send('PRIVMSG %s :%s\n' % (user, message))
+    print "%s: I sent: %s to %s" % (now, message, user)
+
+
 def get_page_title(site):  # takes what we thinks might be a url and tries to get the page title
     try:
         if "http" not in site:
