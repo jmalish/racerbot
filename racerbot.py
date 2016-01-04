@@ -177,7 +177,7 @@ def commands(server_message):
                 elif message.lower().startswith(".source"):
                     send_message("https://github.com/jmalish/racerbot")
                 elif message.lower().startswith(".help"):
-                    send_message("https://github.com/jmalish/racerbot/blob/master/commands_list.txt")
+                    send_message("https://github.com/jmalish/racerbot/blob/dev/commands_list.txt")
                 elif message.lower().startswith(".fishify"):
                     send_message(fishify.fish(message, False))
                 elif message.lower().startswith(".setfishtimer"):
@@ -413,6 +413,7 @@ join_chan(channel)  # initial channel join
 while True:  # this is the actual bot itself, everything in this block is what the bot uses
     irc_message = ircsock.recv(2048)  # receive data from server
     irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
+    print irc_message
 
     try:
         # not sure if making this an if/elif block is a good idea, time will tell I suppose

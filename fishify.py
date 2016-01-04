@@ -80,7 +80,7 @@ def fish(sentence, is_random_call):  # takes a word and changes the syllable to 
                 # get current time, if the fishify was successful, this says when the last time it was run
                 global fish_clock
                 fish_clock = calendar.timegm(time.gmtime())
-            return new_sentence
+            return new_sentence.strip()
         except Exception as e:  # catch if the selected word doesn't exist in the dictionary
             j += 1
             time.sleep(.5)  # wait a sec to give random seed a chance to change
