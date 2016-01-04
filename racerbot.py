@@ -178,7 +178,7 @@ def commands(server_message):
 
             if testing:
                 if message.lower().startswith(".test"):  # checks if bot is listening to us
-                    ircsock.send('KICK %s %s :reason\n' % (channel, user))  # successfully kicks user
+                    ircsock.send('KICK %s %s :EJECTING!\n' % (channel, user))  # successfully kicks user
                     print "test complete"
 
             # <editor-fold desc="dot commands">
