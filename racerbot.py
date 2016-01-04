@@ -25,7 +25,7 @@ botnick = "racerbot_py"         # bots name in channel
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # testing
-testing = True
+testing = False
 if testing:
     channel = "#racerbot.testroom"
     botnick = "racerbot_py2"
@@ -171,10 +171,10 @@ def commands(server_message):
             print server_message
         else:
             now = time.strftime("%I:%M:%S")
-            nick = server_message.split("!")[0].strip(":")
+            user = server_message.split("!")[0].strip(":")
             message = server_message.split(channel + " :")[1]
 
-            print "%s - %s: %s" % (now, nick, message)
+            print "%s - %s: %s" % (now, user, message)
 
             # <editor-fold desc="dot commands">
             try:
@@ -214,8 +214,10 @@ def commands(server_message):
                     if len(twitch.online_channels) > 0:
                         for tw_channel in twitch.online_channels:
                             stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                            send_message("www.twitch.tv/%s is streaming %s | Title: %s" %
-                                         (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+                            send_message("Check your pm's!")
+                            private_message("www.twitch.tv/%s is streaming %s | Title: %s" %
+                                            (stream_info["display_name"], stream_info["game"], stream_info["status"]),
+                                            user)
                     else:
                         send_message("No one's streaming!")
                 elif message.lower().startswith(".offlinestreams"):
@@ -223,7 +225,9 @@ def commands(server_message):
                         channels = ""
                         for tw_channel in twitch.offline_channels:
                             channels += tw_channel + ", "
-                        send_message(channels.rstrip().rstrip(','))
+
+                        send_message("See your pm's for list of offline channels")
+                        private_message(channels.rstrip().rstrip(','), user)
                     else:
                         send_message("There are no offline channels.")
                 elif message.lower().startswith(".allstreams"):
@@ -233,7 +237,9 @@ def commands(server_message):
                         channels = ""
                         for tw_channel in twitch.get_all_channels():
                             channels += tw_channel + ", "
-                        send_message(channels.rstrip().rstrip(','))
+
+                        send_message("Check your pm's!")
+                        private_message(channels.rstrip().rstrip(','), user)
                 elif message.lower().startswith(".addstream"):
                     channel_to_add = message.split(".addstream ")
                     send_message(twitch.add_new_channel(channel_to_add[1]))
@@ -395,7 +401,7 @@ def commands(server_message):
 
             # ~~~~~~~~ QUOTES
             try:
-                irc_quotes.add_last_message(nick, message)  # add message to latest messages
+                irc_quotes.add_last_message(user, message)  # add message to latest messages
             except Exception, error:
                 print "Something went wrong in quotes"
                 print error
