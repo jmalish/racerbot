@@ -176,6 +176,11 @@ def commands(server_message):
 
             print "%s - %s: %s" % (now, user, message)
 
+            if testing:
+                if message.lower().startswith(".test"):  # checks if bot is listening to us
+                    ircsock.send('KICK %s %s :reason\n' % (channel, user))  # successfully kicks user
+                    print "test complete"
+
             # <editor-fold desc="dot commands">
             try:
                 # this block is all the "dot" commands, where something is requested from the bot by a user
@@ -193,6 +198,11 @@ def commands(server_message):
                     send_message(fishify.get_timer())
                 elif message.lower().startswith(".timesincefish"):
                     send_message(fishify.time_since_fish())
+                elif message.lower().startswith(".eject"):
+                    send_message("%s punched out!" % user)
+                    ircsock.send('KICK %s %s :reason\n' % (channel, user))  # successfully kicks user
+                    time.sleep(1)
+                    send_message("oooh, looks like he forgot to open the sunroof first...")
                 elif message.lower().startswith(".setfishify"):
                     fishify.fish_word = message.split()[1]
                     send_message("You got it, I'll put %s all over everything now" % fishify.fish_word)
