@@ -191,6 +191,7 @@ def commands(server_message):
                 elif message.lower().startswith(".help"):
                     send_message("https://github.com/jmalish/racerbot/blob/dev/commands_list.txt")
                 elif message.lower().startswith(".fishify"):
+                    message = message.split(".fishify ")[1]
                     send_message(fishify.fish(message, False))
                 elif message.lower().startswith(".setfishtimer"):
                     send_message(fishify.set_timer(message.split()[1]))
