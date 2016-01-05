@@ -171,5 +171,5 @@ def get_vod_info(vod_id):
                                "display_name": vod_channel})
 
         return vod_json
-    except Exception, e:
+    except Exception, error:
         pass  # An exception here isn't bad, it just means an invalid VOD ID was given
