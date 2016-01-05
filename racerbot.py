@@ -301,8 +301,6 @@ def commands(server_message):
                                 print "Error in random fishify:"
                                 print error
 
-                    # twitch stuff
-                    twitch_check()
             except Exception, error:
                 print "Something went wrong in dot commands:"
                 print error
@@ -436,14 +434,13 @@ join_chan(channel)  # initial channel join
 while True:  # this is the actual bot itself, everything in this block is what the bot uses
     irc_message = ircsock.recv(2048)  # receive data from server
     irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
-    print irc_message
 
+    twitch_check()
     try:
         # not sure if making this an if/elif block is a good idea, time will tell I suppose
         if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
             print irc_message
             ping()
-            twitch_check()
         elif "/NAMES" in irc_message:
             print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
             joined = True  # we've joined the channel
