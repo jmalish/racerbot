@@ -206,7 +206,7 @@ def commands(server_message):
                     send_message("oooh, looks like he forgot to open the sunroof first...")
                 elif message.lower().startswith(".setfishify"):
                     fishify.fish_word = message.split()[1]
-                    send_message("You got it, I'll put %s all over everything now" % fishify.fish_word)
+                    send_message("You got it, I'll put a %s all over everything now" % fishify.fish_word)
                 elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
                     to_send = message.split(".calc")
                     wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
@@ -432,24 +432,28 @@ print "Assigning name"
 
 join_chan(channel)  # initial channel join
 
-while True:  # this is the actual bot itself, everything in this block is what the bot uses
-    irc_message = ircsock.recv(2048)  # receive data from server
-    irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
+while True:
+    while True:  # this is the actual bot itself, everything in this block is what the bot uses
+        irc_message = ircsock.recv(2048)  # receive data from server
+        irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
-    twitch_check()
-    try:
-        # not sure if making this an if/elif block is a good idea, time will tell I suppose
-        if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-            print irc_message
-            ping()
-        elif "/NAMES" in irc_message:
-            print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
-            joined = True  # we've joined the channel
-            fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
-            twitch.joined = True
-        elif irc_message.find(' PRIVMSG '):
-            commands(irc_message)
-    except Exception, e:
-        print "Uncaught Error in while True loop"
-        print e
+        twitch_check()
+        try:
+            # not sure if making this an if/elif block is a good idea, time will tell I suppose
+            if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+                print irc_message
+                ping()
+            elif "/NAMES" in irc_message:
+                print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
+                joined = True  # we've joined the channel
+                fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
+                twitch.joined = True
+            elif irc_message.find(' PRIVMSG '):
+                commands(irc_message)
+        except Exception, e:
+            print "Uncaught Error in while True loop"
+            print e
+
+    print "Attempting reconnect in 15 seconds..."
+    time.sleep(15)
 # </editor-fold desc="Bot">
