@@ -15,6 +15,7 @@ import xml.etree.ElementTree as Etree
 import cleverbot
 import twitch
 import irc_quotes
+import traceback
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -23,11 +24,13 @@ port = 6667                     # irc port
 channel = "#hoggit.iracing"     # channel for bot to join
 botnick = "racerbot_py"         # bots name in channel
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+user_list = []  # contains list of all users in channel (includes ops)
+ops_list = []  # contains list of all ops in channel
 
 # testing
-testing = False
+testing = True
 if testing:
-    channel = "#racerbot.testroom"
+    channel = "#racerbottestroom"
     botnick = "racerbot_py2"
 
 # API Key variables
@@ -94,18 +97,19 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
 
 
 def twitch_check():  # check for twitch updates
-    try:
-        now_streaming = twitch.timer_check()  # check for twitch updates
-        if len(now_streaming):  # if this has anything in it, someone's started streaming
-            print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-            for tw_channel in now_streaming:
-                print tw_channel
-                stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                send_message("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                             (stream_info["display_name"], stream_info["game"], stream_info["status"]))
-    except Exception, error:
-        print "Error in twitch_check() in racerbot.py"
-        print error
+    if joined:
+        try:
+            now_streaming = twitch.timer_check()  # check for twitch updates
+            if len(now_streaming):  # if this has anything in it, someone's started streaming
+                print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                for tw_channel in now_streaming:
+                    print tw_channel
+                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                    send_message("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                                 (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+        except Exception, error:
+            print "Error in twitch_check() in racerbot.py"
+            print error
 
 
 def get_yt_video_info(video_id):  # get video info of youtube video
@@ -178,8 +182,12 @@ def commands(server_message):
 
             if testing:
                 if message.lower().startswith(".test"):  # checks if bot is listening to us
-                    ircsock.send('KICK %s %s :EJECTING!\n' % (channel, user))  # successfully kicks user
-                    print "test complete"
+                    try:
+                        for user in user_list:
+                            send_message(user)
+                        print "test complete"
+                    except:
+                        print "Error in testing .test"
 
             # <editor-fold desc="dot commands">
             try:
@@ -307,8 +315,8 @@ def commands(server_message):
                 print error
             # </editor-fold desc="dot commands">
 
+            # <editor-fold desc="regex stuff">
             if "nospoil" not in message:  # this lets a user post a link without the bot giving info on it
-                # <editor-fold desc="regex stuff">
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
@@ -418,7 +426,7 @@ def commands(server_message):
             # end of "if joined:"
     except Exception, error:
         print "Error in commands():"
-        print error
+        print traceback.format_exc(error)
 # </editor-fold desc="Commands">
 
 # <editor-fold desc="Bot">
@@ -436,9 +444,19 @@ while True:
     while True:  # this is the actual bot itself, everything in this block is what the bot uses
         irc_message = ircsock.recv(2048)  # receive data from server
         irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
+        print "Raw: " + irc_message
 
         twitch_check()
         try:
+            if not joined:
+                names_list_check = "%s @ %s :" % (botnick, channel)  # find NAMES line
+                if names_list_check in irc_message:
+                    names_list = irc_message.split(" :")[1].split("\r")[0].split(' ')
+                    for name in names_list:
+                        user_list.append(name.strip("@"))  # add user to user list
+                        if name.startswith("@"):  # if user is an op (denoted by @)
+                            ops_list.append(name)  # add them to op list
+
             # not sure if making this an if/elif block is a good idea, time will tell I suppose
             if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
                 print irc_message
