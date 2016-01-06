@@ -176,7 +176,10 @@ def commands(server_message):
         else:
             now = time.strftime("%I:%M:%S")
             user = server_message.split("!")[0].strip(":")
-            message = server_message.split(channel + " :")[1]
+            try:
+                message = server_message.split(channel + " :")[1]
+            except:
+                message = ""  # if we're in here, the server sent something the bot thinks a user sent
 
             print "%s - %s: %s" % (now, user, message)
 
@@ -208,10 +211,15 @@ def commands(server_message):
                 elif message.lower().startswith(".timesincefish"):
                     send_message(fishify.time_since_fish())
                 elif message.lower().startswith(".eject"):
-                    send_message("%s punched out!" % user)
-                    ircsock.send('KICK %s %s :reason\n' % (channel, user))  # successfully kicks user
-                    time.sleep(1)
-                    send_message("oooh, looks like he forgot to open the sunroof first...")
+                    if botnick in ops_list:
+                        send_message("%s punched out!" % user)
+                        ircsock.send('KICK %s %s :EJECTING!!\n' % (channel, user))  # successfully kicks user
+                        time.sleep(1)
+                        send_message("Holy crap, he got some air!")
+                    else:
+                        send_message("%s punched out!" % user)
+                        time.sleep(1)
+                        send_message("...uhhh, I'm pushing the button but nothing's happening")
                 elif message.lower().startswith(".setfishify"):
                     fishify.fish_word = message.split()[1]
                     send_message("You got it, I'll put a %s all over everything now" % fishify.fish_word)
@@ -447,25 +455,53 @@ while True:
         print "Raw: " + irc_message
 
         twitch_check()
+
         try:
+            # user list creation
             if not joined:
-                names_list_check = "%s @ %s :" % (botnick, channel)  # find NAMES line
+                names_list_check = "%s = %s :" % (botnick, channel)  # find NAMES line
                 if names_list_check in irc_message:
                     names_list = irc_message.split(" :")[1].split("\r")[0].split(' ')
                     for name in names_list:
                         user_list.append(name.strip("@"))  # add user to user list
                         if name.startswith("@"):  # if user is an op (denoted by @)
-                            ops_list.append(name)  # add them to op list
+                            ops_list.append(name.strip("@"))  # add them to op list
 
             # not sure if making this an if/elif block is a good idea, time will tell I suppose
             if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-                print irc_message
+                if testing:
+                    print irc_message
+
                 ping()
             elif "/NAMES" in irc_message:
                 print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
                 joined = True  # we've joined the channel
                 fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
                 twitch.joined = True
+            elif "PART" in irc_message:
+                user = irc_message.split('!')[0].strip(':')
+                try:
+                    user_list.remove(user)
+                    ops_list.remove(user)
+                except:
+                    pass  # do nothing, user is not an op
+            elif "KICK" in irc_message:
+                user = irc_message.split(' ')[3]
+                try:
+                    user_list.remove(user)
+                    ops_list.remove(user)
+                except:
+                    pass  # do nothing, user is not an op
+            elif "JOIN" in irc_message:
+                user = irc_message.split('!')[0].strip(':')
+                user_list.append(user)
+            elif "MODE" in irc_message:
+                if "+o" in irc_message:
+                    oped_user = irc_message.split(" ")[4]
+                    ops_list.append(oped_user)
+                elif "-o" in irc_message:
+                    user = irc_message.split(" ")[4]
+                    ops_list.remove(user)
             elif irc_message.find(' PRIVMSG '):
                 commands(irc_message)
         except Exception, e:
