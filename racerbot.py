@@ -16,6 +16,7 @@ import cleverbot
 import twitch
 import irc_quotes
 import traceback
+import fish_facts
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -305,6 +306,8 @@ def commands(server_message):
                         send_message(irc_quotes.last_seen(user))
                     else:
                         send_message("%s? Oh, you don't want to know what they said..." % user)
+                elif message.lower().startswith(".fishfact"):
+                    send_message(fish_facts.get_random_fact())
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
                     random.seed(time.time())

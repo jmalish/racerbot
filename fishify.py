@@ -86,5 +86,6 @@ def fish(sentence, is_random_call):  # takes a word and changes the syllable to 
             time.sleep(.5)  # wait a sec to give random seed a chance to change
             if j == 3:
                 # if it tried all three times and failed, tell chat what happened
-                print "Error in fishify(): " + e
-                return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"
+                print "Error in fishify(): "
+                print e
+                # return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"
