@@ -453,63 +453,66 @@ join_chan(channel)  # initial channel join
 
 while True:
     while True:  # this is the actual bot itself, everything in this block is what the bot uses
-        irc_message = ircsock.recv(2048)  # receive data from server
-        irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
-        print "Raw: " + irc_message
-
-        twitch_check()
-
         try:
-            # user list creation
-            if not joined:
-                names_list_check = "%s = %s :" % (botnick, channel)  # find NAMES line
-                if names_list_check in irc_message:
-                    names_list = irc_message.split(" :")[1].split("\r")[0].split(' ')
-                    for name in names_list:
-                        user_list.append(name.strip("@"))  # add user to user list
-                        if name.startswith("@"):  # if user is an op (denoted by @)
-                            ops_list.append(name.strip("@"))  # add them to op list
+            irc_message = ircsock.recv(2048)  # receive data from server
+            irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
-            # not sure if making this an if/elif block is a good idea, time will tell I suppose
-            if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-                if testing:
-                    print irc_message
+            twitch_check()
 
-                ping()
-            elif "/NAMES" in irc_message:
-                print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
-                joined = True  # we've joined the channel
-                fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
-                twitch.joined = True
-            elif "PART" in irc_message:
-                user = irc_message.split('!')[0].strip(':')
-                try:
-                    user_list.remove(user)
-                    ops_list.remove(user)
-                except:
-                    pass  # do nothing, user is not an op
-            elif "KICK" in irc_message:
-                user = irc_message.split(' ')[3]
-                try:
-                    user_list.remove(user)
-                    ops_list.remove(user)
-                except:
-                    pass  # do nothing, user is not an op
-            elif "JOIN" in irc_message:
-                user = irc_message.split('!')[0].strip(':')
-                user_list.append(user)
-            elif "MODE" in irc_message:
-                if "+o" in irc_message:
-                    oped_user = irc_message.split(" ")[4]
-                    ops_list.append(oped_user)
-                elif "-o" in irc_message:
-                    user = irc_message.split(" ")[4]
-                    ops_list.remove(user)
-            elif irc_message.find(' PRIVMSG '):
-                commands(irc_message)
-        except Exception, e:
-            print "Uncaught Error in while True loop"
-            print e
+            try:
+                # user list creation
+                if not joined:
+                    names_list_check = "%s = %s :" % (botnick, channel)  # find NAMES line
+                    if names_list_check in irc_message:
+                        names_list = irc_message.split(" :")[1].split("\r")[0].split(' ')
+                        for name in names_list:
+                            user_list.append(name.strip("@"))  # add user to user list
+                            if name.startswith("@"):  # if user is an op (denoted by @)
+                                ops_list.append(name.strip("@"))  # add them to op list
+
+                # not sure if making this an if/elif block is a good idea, time will tell I suppose
+                if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+                    if testing:
+                        print irc_message
+
+                    ping()
+                elif "/NAMES" in irc_message:
+                    print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
+                    joined = True  # we've joined the channel
+                    fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
+                    twitch.joined = True
+                elif "PART" in irc_message:
+                    user = irc_message.split('!')[0].strip(':')
+                    try:
+                        user_list.remove(user)
+                        ops_list.remove(user)
+                    except:
+                        pass  # do nothing, user is not an op
+                elif "KICK" in irc_message:
+                    user = irc_message.split(' ')[3]
+                    try:
+                        user_list.remove(user)
+                        ops_list.remove(user)
+                    except:
+                        pass  # do nothing, user is not an op
+                elif "JOIN" in irc_message:
+                    user = irc_message.split('!')[0].strip(':')
+                    user_list.append(user)
+                elif "MODE" in irc_message:
+                    if "+o" in irc_message:
+                        oped_user = irc_message.split(" ")[4]
+                        ops_list.append(oped_user)
+                    elif "-o" in irc_message:
+                        user = irc_message.split(" ")[4]
+                        ops_list.remove(user)
+                elif irc_message.find(' PRIVMSG '):
+                    commands(irc_message)
+            except Exception, e:
+                print "Uncaught Error in while True loop"
+                print e
+        except Exception, error:
+            print "Error with server connection"
+            print error
 
     print "Attempting reconnect in 15 seconds..."
     time.sleep(15)
