@@ -34,6 +34,8 @@ if testing:
     channel = "#racerbottestroom"
     botnick = "racerbot_py2"
 
+log_file_name = channel + ".log"  # file name for logging (placed here so it creates one for testing room too)
+
 # API Key variables
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
     secrets = json.load(jsonfile)
@@ -457,7 +459,10 @@ while True:
             irc_message = ircsock.recv(2048)  # receive data from server
             irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
-            twitch_check()
+            with open(log_file_name, 'a') as log_file:  # open log file in append mode
+                log_file.write(irc_message)  # write to log file
+
+            twitch_check()  # check if it's time to update twitch
 
             try:
                 # user list creation
