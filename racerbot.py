@@ -30,7 +30,7 @@ user_list = []  # contains list of all users in channel (includes ops)
 ops_list = []  # contains list of all ops in channel
 
 # testing
-testing = True
+testing = False
 if testing:
     channel = "#racerbottestroom"
     botnick = "racerbot_py2"
