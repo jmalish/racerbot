@@ -47,12 +47,15 @@ def time_since_fish():
 
 
 # actual fishify function
-def fish(sentence, is_random_call):  # takes a word and changes the syllable to a given word
+def fish(sentence, is_random_call, randSeed):  # takes a word and changes the syllable to a given word
     for j in range(0, 5):  # let the bot try five times to find a word, this is so it doesn't give up on first try
         try:
             words = sentence.split()  # get number of words by splitting on spaces
 
-            random.seed(time.time())  # set seed for random
+            if randSeed == 0:
+                random.seed(time.time())  # set seed for random
+            else:
+                random.seed(randSeed)
             random_int_word = random.randint(0, len(words) - 1)  # generate a random integer to select word
             chosen_word = words[random_int_word]  # get the word that correlates to the random integer
             print ("I chose '" + chosen_word + "' to fishify")

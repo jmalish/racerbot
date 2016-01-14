@@ -215,7 +215,7 @@ def commands(server_message):
                     send_message("https://github.com/jmalish/racerbot/blob/dev/commands_list.txt")
                 elif message.lower().startswith(".fishify"):
                     message = message.split(".fishify ")[1]
-                    send_message(fishify.fish(message, False))
+                    send_message(fishify.fish(message, False, 0))
                 elif message.lower().startswith(".setfishtimer"):
                     send_message(fishify.set_timer(message.split()[1]))
                 elif message.lower().startswith(".getfishtimer"):
@@ -323,13 +323,14 @@ def commands(server_message):
                     send_message(fish_facts.get_random_fact())
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
-                    random.seed(time.time())
+                    ranSeed = time.time()
+                    random.seed(ranSeed)
                     random_int = random.randint(0, 30)
                     # fishify stuff
                     if random_int == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
                         if fishify.timer_check():
                             try:
-                                send_message(fishify.fish(message, True))  # send the chosen word to fishify()
+                                send_message(fishify.fish(message, True, ranSeed))  # send the chosen word
                             except Exception, error:
                                 print "Error in random fishify:"
                                 print error
