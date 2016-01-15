@@ -208,10 +208,11 @@ def commands(server_message):
                 elif message.lower().startswith(".fishify"):
                     message = message.split(".fishify ")[1]
                     send_message(fishify.fish(message, False))
-                elif message.lower().startswith(".setfishchance"):
+                elif message.lower().startswith(".setfishchance "):
                     global fish_chance
                     new_num = message.split(".setfishchance")
-                    fish_chance = (new_num[1])
+                    fish_chance = (int(new_num[1]))
+                    send_message("Chance of fishify is now 1 in " + str(fish_chance + 1))
                 elif message.lower().startswith(".setfishtimer"):
                     send_message(fishify.set_timer(message.split()[1]))
                 elif message.lower().startswith(".getfishtimer"):
@@ -321,7 +322,8 @@ def commands(server_message):
                     random.seed(ranSeed)
                     random_int = random.randint(0, fish_chance)
                     # fishify stuff
-                    if random_int == 1:  # I want this to be separate so the bot doesn't stop looking for commands here
+                    print random_int
+                    if random_int == 0:  # I want this to be separate so the bot doesn't stop looking for commands here
                         if fishify.timer_check():
                             try:
                                 send_message(fishify.fish(message, True))  # send the chosen word
