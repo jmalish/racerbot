@@ -1,3 +1,3 @@
 import fishify
 
-print fishify.set_timer(".5")
+print fishify.set_timer("0")

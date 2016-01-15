@@ -47,6 +47,7 @@ youtubeApiKey = secrets["youtubeKey"]   # api key for youtube
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 clever = cleverbot.Cleverbot()  # cleverbot setup
+fish_chance = 30
 twitch.twitch_initial()  # twitch setup
 print "Initial setup done"
 
@@ -207,6 +208,10 @@ def commands(server_message):
                 elif message.lower().startswith(".fishify"):
                     message = message.split(".fishify ")[1]
                     send_message(fishify.fish(message, False))
+                elif message.lower().startswith(".setfishchance"):
+                    global fish_chance
+                    new_num = message.split(".setfishchance")
+                    fish_chance = (new_num[1])
                 elif message.lower().startswith(".setfishtimer"):
                     send_message(fishify.set_timer(message.split()[1]))
                 elif message.lower().startswith(".getfishtimer"):
@@ -314,9 +319,9 @@ def commands(server_message):
                     # fishify stuff
                     ranSeed = time.time()
                     random.seed(ranSeed)
-                    random_int = random.randint(0, 30)
+                    random_int = random.randint(0, fish_chance)
                     # fishify stuff
-                    if random_int == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
+                    if random_int == 1:  # I want this to be separate so the bot doesn't stop looking for commands here
                         if fishify.timer_check():
                             try:
                                 send_message(fishify.fish(message, True))  # send the chosen word
