@@ -24,7 +24,7 @@ def timer_check():
 def set_timer(new_time):
     try:
         global fish_timer
-        fish_timer = int(new_time) * 60
+        fish_timer = float(new_time) * 60
         return "Fish timer now set to " + str(fish_timer/60) + " minutes"
     except Exception as e:
         print e
