@@ -17,7 +17,6 @@ import twitch
 import irc_quotes
 import traceback
 import fish_facts
-from datetime import datetime
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -50,16 +49,9 @@ reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with
 clever = cleverbot.Cleverbot()  # cleverbot setup
 twitch.twitch_initial()  # twitch setup
 print "Initial setup done"
+
 # </editor-fold desc="Variables">
-
-
 # <editor-fold desc="Basic Functions">
-def log_chat(message):
-    if "PING :" not in message:
-        time_now = str(datetime.now()).split('.')[0]
-        message = message.strip("\n")
-        with open(log_file_name, 'a') as log_file:  # open log file in append mode
-            log_file.write(time_now + " " + message + "\n")  # write to log file
 
 
 def join_chan(chan):  # joins channels
@@ -75,9 +67,7 @@ def ping():  # responds to pings from server
 def send_message(message):  # function to send message, a little easier than typing ircsocket over and over
     message = message.encode('utf-8')
     now = time.strftime("%I:%M:%S")
-    to_send = 'PRIVMSG %s :%s\n' % (channel, message)
-    ircsock.send(to_send)
-    log_chat(to_send)
+    ircsock.send('PRIVMSG %s :%s\n' % (channel, message))
     print "%s: I sent: %s to %s" % (now, message, channel)
     irc_quotes.add_last_message(botnick, message)  # add bots message to last messages table
 
@@ -199,7 +189,8 @@ def commands(server_message):
             if testing:
                 if message.lower().startswith(".test"):  # checks if bot is listening to us
                     try:
-                        ircsock.send('CTCP %s :%s\n' % (channel, "is testing"))
+                        for user in user_list:
+                            send_message(user)
                         print "test complete"
                     except:
                         print "Error in testing .test"
@@ -225,9 +216,7 @@ def commands(server_message):
                 elif message.lower().startswith(".eject"):
                     if botnick in ops_list:
                         send_message("%s punched out!" % user)
-                        to_send = 'KICK %s %s :EJECTING!!\n' % (channel, user)
-                        ircsock.send(to_send)  # successfully kicks user
-                        log_chat(to_send)
+                        ircsock.send('KICK %s %s :EJECTING!!\n' % (channel, user))  # successfully kicks user
                         time.sleep(1)
                         send_message("Holy crap, he got some air!")
                     else:
@@ -471,11 +460,8 @@ while True:
             irc_message = ircsock.recv(2048)  # receive data from server
             irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
-            if testing:
-                print "Raw: " + irc_message
-
-            if joined:  # no reason to log stuff from server when first connecting
-                log_chat(irc_message)
+            with open(log_file_name, 'a') as log_file:  # open log file in append mode
+                log_file.write(irc_message)  # write to log file
 
             twitch_check()  # check if it's time to update twitch
 
@@ -492,6 +478,9 @@ while True:
 
                 # not sure if making this an if/elif block is a good idea, time will tell I suppose
                 if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+                    if testing:
+                        print irc_message
+
                     ping()
                 elif "/NAMES" in irc_message:
                     print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
