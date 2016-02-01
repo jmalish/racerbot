@@ -174,7 +174,8 @@ def query_wolfram_alpha(query):
 
 # <editor-fold desc="Commands">
 def commands(server_message):
-    website = False
+    website = False  # these two are used to determine if the bot should bother with reddit stuff
+    reddit_url = False
     try:
         if not joined:  # there are a few things we don't want to do until joined
             print server_message
@@ -349,7 +350,10 @@ def commands(server_message):
                         for word in message.split():
                             # get rid of trailing commas or periods (ie end of sentence)
                             word = word.strip(',').strip('.')
-                            if ("reddit" in word) or ("twitch" in word) or ("youtube" in word) \
+                            if "reddit" in word:
+                                reddit_url = True
+                                pass
+                            elif ("twitch" in word) or ("youtube" in word) \
                                     or ("youtu.be" in word) or ("freenode" in word):
                                 # reddit, twitch, and youtube stuff is already being taken care of
                                 # no need to get it here
@@ -369,7 +373,7 @@ def commands(server_message):
                     # search for subreddits (r/example)
                     subreddit_regex = re.findall("r/([a-z0-9_]+)(/comments/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
-                    if subreddit_regex and (website is False):  # if this is true, we found a subreddit name
+                    if subreddit_regex and (website is False) and reddit_url:  # if this is true, we found a subreddit name
                         for result in subreddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
