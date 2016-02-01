@@ -324,7 +324,6 @@ def commands(server_message):
                     random.seed(ranSeed)
                     random_int = random.randint(0, fish_chance)
                     # fishify stuff
-                    print random_int
                     if random_int == 0:  # I want this to be separate so the bot doesn't stop looking for commands here
                         if fishify.timer_check():
                             try:
