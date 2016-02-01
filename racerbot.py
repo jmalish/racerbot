@@ -174,6 +174,7 @@ def query_wolfram_alpha(query):
 
 # <editor-fold desc="Commands">
 def commands(server_message):
+    website = False;
     try:
         if not joined:  # there are a few things we don't want to do until joined
             print server_message
@@ -338,11 +339,36 @@ def commands(server_message):
 
             # <editor-fold desc="regex stuff">
             if "nospoil" not in message:  # this lets a user post a link without the bot giving info on it
+                # ~~~~~~~~ WEBSITE TITLES
+                try:
+                    # search for websites
+                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
+                    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
+                    if url_regex:  # if this is true, the message has a url in it
+                        website = True;
+                        for word in message.split():
+                            # get rid of trailing commas or periods (ie end of sentence)
+                            word = word.strip(',').strip('.')
+                            if ("reddit" in word) or ("twitch" in word) or ("youtube" in word) \
+                                    or ("youtu.be" in word) or ("freenode" in word):
+                                # reddit, twitch, and youtube stuff is already being taken care of
+                                # no need to get it here
+                                # Freenode server pings bot every so often
+                                pass
+                            elif "." in word:  # look for 'words' with a '.' in the middle
+                                if "@" not in word:  # ignore emails
+                                    title = get_page_title(word)
+                                    if title:
+                                        send_message(str(title))
+                except Exception, error:
+                    print "Something went wrong in website title:"
+                    print error
+
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
-                    subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-                    if subreddit_regex:  # if this is true, we found a subreddit name
+                    subreddit_regex = re.findall("r/([a-z0-9_]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
+                    if subreddit_regex & (website is False):  # if this is true, we found a subreddit name
                         for result in subreddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
@@ -362,30 +388,6 @@ def commands(server_message):
                                     print error
                 except Exception, error:
                     print "Something went wrong in reddit block:"
-                    print error
-
-                # ~~~~~~~~ WEBSITE TITLES
-                try:
-                    # search for websites
-                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
-                    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
-                    if url_regex:  # if this is true, the message has a url in it
-                        for word in message.split():
-                            # get rid of trailing commas or periods (ie end of sentence)
-                            word = word.strip(',').strip('.')
-                            if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
-                                    or ("youtu.be" in word) or ("freenode" in word):
-                                # reddit, twitch, and youtube stuff is already being taken care of
-                                # no need to get it here
-                                # Freenode server pings bot every so often
-                                pass
-                            elif "." in word:  # look for 'words' with a '.' in the middle
-                                if "@" not in word:  # ignore emails
-                                    title = get_page_title(word)
-                                    if title:
-                                        send_message(str(title))
-                except Exception, error:
-                    print "Something went wrong in website title:"
                     print error
 
                 # ~~~~~~~~ YOUTUBE
