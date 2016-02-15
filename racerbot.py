@@ -287,41 +287,50 @@ def commands(server_message):
                 elif message.lower().startswith(".timesincetwitch"):
                     send_message(twitch.time_since_update())
                 elif message.lower().startswith(".quote"):
-                    quotes = irc_quotes.get_quotes()  # get all quotes from the table
-                    if message.split(".quote")[1].strip():
-                        quote_number = int(message.split(".quote")[1].strip()) - 1  # numbers are dumb
-                        quote_user = quotes[quote_number][1]  # get each part of quote
-                        quote_message = quotes[quote_number][2]
-                        send_message("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
-                    else:  # no number requested, get and send random quote
-                        random.seed(time.time())
-                        random_int = random.randint(0, len(quotes)-1)  # get a random quote
-                        quote_number = quotes[random_int][0]  # get each part of quote
-                        quote_user = quotes[random_int][1]
-                        quote_message = quotes[random_int][2]
-                        send_message("#%s - %s: %s" % (quote_number, quote_user, quote_message))
-                elif message.lower().startswith(".grab "):
-                    try:
-                        user_to_grab = message.split(".grab")[1].strip()  # split off username
-                        if irc_quotes.grab(user_to_grab):
-                            send_message("Got it!")
-                        else:
-                            send_message("Something went wrong! WHAT DID YOU DO?!")
-                    except Exception, error:
-                        send_message("I can't grab that!")
-                        print error
-                elif message.lower().startswith(".lastseen "):
-                    user = message.split(".lastseen ")[1].strip()
-                    if irc_quotes.last_seen(user):
-                        send_message(irc_quotes.last_seen(user))
+                    if not testing:
+                        quotes = irc_quotes.get_quotes()  # get all quotes from the table
+                        if message.split(".quote")[1].strip():
+                            quote_number = int(message.split(".quote")[1].strip()) - 1  # numbers are dumb
+                            quote_user = quotes[quote_number][1]  # get each part of quote
+                            quote_message = quotes[quote_number][2]
+                            send_message("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
+                        else:  # no number requested, get and send random quote
+                            random.seed(time.time())
+                            random_int = random.randint(0, len(quotes)-1)  # get a random quote
+                            quote_number = quotes[random_int][0]  # get each part of quote
+                            quote_user = quotes[random_int][1]
+                            quote_message = quotes[random_int][2]
+                            send_message("#%s - %s: %s" % (quote_number, quote_user, quote_message))
                     else:
-                        send_message("%s? Oh, you don't want to know what they said..." % user)
+                        send_message("Quotes disabled while in testing mode")
+                elif message.lower().startswith(".grab "):
+                    if not testing:
+                        try:
+                            user_to_grab = message.split(".grab")[1].strip()  # split off username
+                            if irc_quotes.grab(user_to_grab):
+                                send_message("Got it!")
+                            else:
+                                send_message("Something went wrong! WHAT DID YOU DO?!")
+                        except Exception, error:
+                            send_message("I can't grab that!")
+                            print error
+                    else:
+                        send_message("Quotes disabled while in testing mode")
+                elif message.lower().startswith(".lastseen "):
+                    if not testing:
+                        user = message.split(".lastseen ")[1].strip()
+                        if irc_quotes.last_seen(user):
+                            send_message(irc_quotes.last_seen(user))
+                        else:
+                            send_message("%s? Oh, you don't want to know what they said..." % user)
+                    else:
+                        send_message("Quotes disabled while in testing mode")
                 elif message.lower().startswith(".fishfact"):
                     send_message(fish_facts.get_random_fact())
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
-                    ranSeed = time.time()
-                    random.seed(ranSeed)
+                    ran_seed = time.time()
+                    random.seed(ran_seed)
                     random_int = random.randint(0, fish_chance)
                     # fishify stuff
                     if random_int == 0:  # I want this to be separate so the bot doesn't stop looking for commands here
@@ -350,7 +359,7 @@ def commands(server_message):
                             # get rid of trailing commas or periods (ie end of sentence)
                             word = word.strip(',').strip('.')
                             if "reddit" in word:
-                                reddit_url = True
+                                website = False
                                 pass
                             elif ("twitch" in word) or ("youtube" in word) \
                                     or ("youtu.be" in word) or ("freenode" in word):
@@ -373,8 +382,9 @@ def commands(server_message):
                     # search for subreddits (r/example)
                     subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
+
                     # if this is true, we found a subreddit name
-                    if subreddit_regex and (website is False) and reddit_url:
+                    if subreddit_regex and not website:
                         for result in subreddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
@@ -449,11 +459,12 @@ def commands(server_message):
             # </editor-fold desc="regex stuff">
 
             # ~~~~~~~~ QUOTES
-            try:
-                irc_quotes.add_last_message(user, message)  # add message to latest messages
-            except Exception, error:
-                print "Something went wrong in quotes"
-                print error
+            if not testing:
+                try:
+                    irc_quotes.add_last_message(user, message)  # add message to latest messages
+                except Exception, error:
+                    print "Something went wrong in quotes"
+                    print error
 
             # end of "if joined:"
     except Exception, error:
