@@ -366,13 +366,15 @@ def commands(server_message):
                 except Exception, error:
                     print "Something went wrong in website title:"
                     print error
+                # end of website url block
 
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
-                    subreddit_regex = re.findall("r/([a-z0-9_]+)(/comments/([a-z0-9_]+))?", message,
+                    subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
-                    if subreddit_regex and (website is False) and reddit_url:  # if this is true, we found a subreddit name
+                    # if this is true, we found a subreddit name
+                    if subreddit_regex and (website is False) and reddit_url:
                         for result in subreddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
@@ -393,6 +395,7 @@ def commands(server_message):
                 except Exception, error:
                     print "Something went wrong in reddit block:"
                     print error
+                # end of reddit block
 
                 # ~~~~~~~~ YOUTUBE
                 try:
@@ -441,6 +444,8 @@ def commands(server_message):
                 except Exception, error:
                     print "Something went wrong in twitch in racerbot"
                     print error
+                # end of Twitch block
+            # end of nospoil block
             # </editor-fold desc="regex stuff">
 
             # ~~~~~~~~ QUOTES
