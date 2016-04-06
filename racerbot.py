@@ -351,7 +351,7 @@ def commands(server_message):
                 # ~~~~~~~~ WEBSITE TITLES
                 try:
                     # search for websites
-                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
+                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,4}", message, flags=re.IGNORECASE)
                     # here, we're just seeing if the message even contains a url, not concerned with whole url yet
                     if url_regex:  # if this is true, the message has a url in it
                         website = True
@@ -369,9 +369,10 @@ def commands(server_message):
                                 pass
                             elif "." in word:  # look for 'words' with a '.' in the middle
                                 if "@" not in word:  # ignore emails
-                                    title = get_page_title(word)
-                                    if title:
-                                        send_message(str(title))
+                                    if "meme" not in word:
+                                        title = get_page_title(word)
+                                        if title:
+                                            send_message(str(title))
                 except Exception, error:
                     print "Something went wrong in website title:"
                     print error
