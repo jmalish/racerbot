@@ -23,11 +23,15 @@ def timer_check():
 # sets timer
 def set_timer(new_time):
     try:
-        global fish_timer
-        fish_timer = int(new_time) * 60
-        return "Fish timer now set to " + str(fish_timer/60) + " minutes"
+        time_to_set = float(new_time)
+        if time_to_set < 0:
+            return "Uhhh, yeah, that's not gonna happen..."
+        else:
+            global fish_timer
+            fish_timer = time_to_set * 60
+            return "Fish timer now set to " + str(fish_timer/60) + " minutes"
     except Exception as e:
-        print e.message
+        print e
         return "Whoa there, what kinda number is that?!"
 
 
@@ -86,5 +90,6 @@ def fish(sentence, is_random_call):  # takes a word and changes the syllable to 
             time.sleep(.5)  # wait a sec to give random seed a chance to change
             if j == 3:
                 # if it tried all three times and failed, tell chat what happened
-                print "Error in fishify(): " + e.message
-                return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"
+                print "Error in fishify(): "
+                print e
+                # return "I'm pretty sure none of those are words... I looked in the dictionary and everything!"

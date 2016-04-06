@@ -15,6 +15,8 @@ import xml.etree.ElementTree as Etree
 import cleverbot
 import twitch
 import irc_quotes
+import traceback
+import fish_facts
 
 # <editor-fold desc="Variables">
 # Some basic variables used to configure the bot
@@ -23,12 +25,16 @@ port = 6667                     # irc port
 channel = "#hoggit.iracing"     # channel for bot to join
 botnick = "racerbot_py"         # bots name in channel
 ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+user_list = []  # contains list of all users in channel (includes ops)
+ops_list = []  # contains list of all ops in channel
 
 # testing
 testing = False
 if testing:
-    channel = "#racerbot.testroom"
+    channel = "#racerbottestroom"
     botnick = "racerbot_py2"
+
+log_file_name = channel + ".log"  # file name for logging (placed here so it creates one for testing room too)
 
 # API Key variables
 with open('pysecrets.json') as jsonfile:  # get contents of secrets file (contains api keys)
@@ -41,6 +47,7 @@ youtubeApiKey = secrets["youtubeKey"]   # api key for youtube
 joined = False      # tells us if bot has successfully joined, keeps from sending messages if not joined to channel
 reddit = praw.Reddit(user_agent="racer0940")  # used to access reddit's API with PRAW
 clever = cleverbot.Cleverbot()  # cleverbot setup
+fish_chance = 30
 twitch.twitch_initial()  # twitch setup
 print "Initial setup done"
 
@@ -94,18 +101,19 @@ def get_page_title(site):  # takes what we thinks might be a url and tries to ge
 
 
 def twitch_check():  # check for twitch updates
-    try:
-        now_streaming = twitch.timer_check()  # check for twitch updates
-        if len(now_streaming):  # if this has anything in it, someone's started streaming
-            print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-            for tw_channel in now_streaming:
-                print tw_channel
-                stream_info = json.loads(twitch.get_channel_info(tw_channel))
-                send_message("www.twitch.tv/%s has started streaming %s | Title: %s" %
-                             (stream_info["display_name"], stream_info["game"], stream_info["status"]))
-    except Exception, error:
-        print "Error in twitch_check() in racerbot.py"
-        print error
+    if joined:
+        try:
+            now_streaming = twitch.timer_check()  # check for twitch updates
+            if len(now_streaming):  # if this has anything in it, someone's started streaming
+                print "people started streaming~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                for tw_channel in now_streaming:
+                    print tw_channel
+                    stream_info = json.loads(twitch.get_channel_info(tw_channel))
+                    send_message("www.twitch.tv/%s has started streaming %s | Title: %s" %
+                                 (stream_info["display_name"], stream_info["game"], stream_info["status"]))
+        except Exception, error:
+            print "Error in twitch_check() in racerbot.py"
+            print error
 
 
 def get_yt_video_info(video_id):  # get video info of youtube video
@@ -166,20 +174,29 @@ def query_wolfram_alpha(query):
 
 # <editor-fold desc="Commands">
 def commands(server_message):
+    website = False  # these two are used to determine if the bot should bother with reddit stuff
+    reddit_url = False
     try:
         if not joined:  # there are a few things we don't want to do until joined
             print server_message
         else:
             now = time.strftime("%I:%M:%S")
             user = server_message.split("!")[0].strip(":")
-            message = server_message.split(channel + " :")[1]
+            try:
+                message = server_message.split(channel + " :")[1]
+            except:
+                message = ""  # if we're in here, the server sent something the bot thinks a user sent
 
             print "%s - %s: %s" % (now, user, message)
 
             if testing:
                 if message.lower().startswith(".test"):  # checks if bot is listening to us
-                    ircsock.send('KICK %s %s :EJECTING!\n' % (channel, user))  # successfully kicks user
-                    print "test complete"
+                    try:
+                        for user in user_list:
+                            send_message(user)
+                        print "test complete"
+                    except:
+                        print "Error in testing .test"
 
             # <editor-fold desc="dot commands">
             try:
@@ -193,6 +210,11 @@ def commands(server_message):
                 elif message.lower().startswith(".fishify"):
                     message = message.split(".fishify ")[1]
                     send_message(fishify.fish(message, False))
+                elif message.lower().startswith(".setfishchance "):
+                    global fish_chance
+                    new_num = message.split(".setfishchance")
+                    fish_chance = (int(new_num[1]))
+                    send_message("Chance of fishify is now 1 in " + str(fish_chance + 1))
                 elif message.lower().startswith(".setfishtimer"):
                     send_message(fishify.set_timer(message.split()[1]))
                 elif message.lower().startswith(".getfishtimer"):
@@ -200,13 +222,18 @@ def commands(server_message):
                 elif message.lower().startswith(".timesincefish"):
                     send_message(fishify.time_since_fish())
                 elif message.lower().startswith(".eject"):
-                    send_message("%s punched out!" % user)
-                    ircsock.send('KICK %s %s :reason\n' % (channel, user))  # successfully kicks user
-                    time.sleep(1)
-                    send_message("oooh, looks like he forgot to open the sunroof first...")
+                    if botnick in ops_list:
+                        send_message("%s punched out!" % user)
+                        ircsock.send('KICK %s %s :EJECTING!!\n' % (channel, user))  # successfully kicks user
+                        time.sleep(1)
+                        send_message("Holy crap, he got some air!")
+                    else:
+                        send_message("%s punched out!" % user)
+                        time.sleep(1)
+                        send_message("...uhhh, I'm pushing the button but nothing's happening")
                 elif message.lower().startswith(".setfishify"):
                     fishify.fish_word = message.split()[1]
-                    send_message("You got it, I'll put %s all over everything now" % fishify.fish_word)
+                    send_message("You got it, I'll put a %s all over everything now" % fishify.fish_word)
                 elif message.lower().startswith(".calc"):  # ~~~~~~~~~~ WOLFRAM
                     to_send = message.split(".calc")
                     wolfram_results = json.loads(query_wolfram_alpha(to_send[1]))
@@ -260,44 +287,56 @@ def commands(server_message):
                 elif message.lower().startswith(".timesincetwitch"):
                     send_message(twitch.time_since_update())
                 elif message.lower().startswith(".quote"):
-                    quotes = irc_quotes.get_quotes()  # get all quotes from the table
-                    if message.split(".quote")[1].strip():
-                        quote_number = int(message.split(".quote")[1].strip()) - 1  # numbers are dumb
-                        quote_user = quotes[quote_number][1]  # get each part of quote
-                        quote_message = quotes[quote_number][2]
-                        send_message("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
-                    else:  # no number requested, get and send random quote
-                        random.seed(time.time())
-                        random_int = random.randint(0, len(quotes)-1)  # get a random quote
-                        quote_number = quotes[random_int][0]  # get each part of quote
-                        quote_user = quotes[random_int][1]
-                        quote_message = quotes[random_int][2]
-                        send_message("#%s - %s: %s" % (quote_number, quote_user, quote_message))
-                elif message.lower().startswith(".grab "):
-                    try:
-                        user_to_grab = message.split(".grab")[1].strip()  # split off username
-                        if irc_quotes.grab(user_to_grab):
-                            send_message("Got it!")
-                        else:
-                            send_message("Something went wrong! WHAT DID YOU DO?!")
-                    except Exception, error:
-                        send_message("I can't grab that!")
-                        print error
-                elif message.lower().startswith(".lastseen "):
-                    user = message.split(".lastseen ")[1].strip()
-                    if irc_quotes.last_seen(user):
-                        send_message(irc_quotes.last_seen(user))
+                    if not testing:
+                        quotes = irc_quotes.get_quotes()  # get all quotes from the table
+                        if message.split(".quote")[1].strip():
+                            quote_number = int(message.split(".quote")[1].strip()) - 1  # numbers are dumb
+                            quote_user = quotes[quote_number][1]  # get each part of quote
+                            quote_message = quotes[quote_number][2]
+                            send_message("#%s - %s: %s" % (quote_number + 1, quote_user, quote_message))
+                        else:  # no number requested, get and send random quote
+                            random.seed(time.time())
+                            random_int = random.randint(0, len(quotes)-1)  # get a random quote
+                            quote_number = quotes[random_int][0]  # get each part of quote
+                            quote_user = quotes[random_int][1]
+                            quote_message = quotes[random_int][2]
+                            send_message("#%s - %s: %s" % (quote_number, quote_user, quote_message))
                     else:
-                        send_message("%s? Oh, you don't want to know what they said..." % user)
+                        send_message("Quotes disabled while in testing mode")
+                elif message.lower().startswith(".grab "):
+                    if not testing:
+                        try:
+                            user_to_grab = message.split(".grab")[1].strip()  # split off username
+                            if irc_quotes.grab(user_to_grab):
+                                send_message("Got it!")
+                            else:
+                                send_message("Something went wrong! WHAT DID YOU DO?!")
+                        except Exception, error:
+                            send_message("I can't grab that!")
+                            print error
+                    else:
+                        send_message("Quotes disabled while in testing mode")
+                elif message.lower().startswith(".lastseen "):
+                    if not testing:
+                        user = message.split(".lastseen ")[1].strip()
+                        if irc_quotes.last_seen(user):
+                            send_message(irc_quotes.last_seen(user))
+                        else:
+                            send_message("%s? Oh, you don't want to know what they said..." % user)
+                    else:
+                        send_message("Quotes disabled while in testing mode")
+                elif message.lower().startswith(".fishfact"):
+                    send_message(fish_facts.get_random_fact())
                 else:  # if no commands are called, then we'll do some fun stuff
                     # fishify stuff
-                    random.seed(time.time())
-                    random_int = random.randint(0, 30)
+                    ran_seed = time.time()
+                    random.seed(ran_seed)
+                    random_int = random.randint(0, fish_chance)
                     # fishify stuff
-                    if random_int == 30:  # I want this to be separate so the bot doesn't stop looking for commands here
+                    if random_int == 0:  # I want this to be separate so the bot doesn't stop looking for commands here
                         if fishify.timer_check():
                             try:
-                                send_message(fishify.fish(message, True))  # send the chosen word to fishify()
+                                send_message(fishify.fish(message, True))  # send the chosen word
                             except Exception, error:
                                 print "Error in random fishify:"
                                 print error
@@ -307,13 +346,46 @@ def commands(server_message):
                 print error
             # </editor-fold desc="dot commands">
 
+            # <editor-fold desc="regex stuff">
             if "nospoil" not in message:  # this lets a user post a link without the bot giving info on it
-                # <editor-fold desc="regex stuff">
+                # ~~~~~~~~ WEBSITE TITLES
+                try:
+                    # search for websites
+                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,4}", message, flags=re.IGNORECASE)
+                    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
+                    if url_regex:  # if this is true, the message has a url in it
+                        website = True
+                        for word in message.split():
+                            # get rid of trailing commas or periods (ie end of sentence)
+                            word = word.strip(',').strip('.')
+                            if "reddit" in word:
+                                website = False
+                                pass
+                            elif ("twitch" in word) or ("youtube" in word) \
+                                    or ("youtu.be" in word) or ("freenode" in word):
+                                # reddit, twitch, and youtube stuff is already being taken care of
+                                # no need to get it here
+                                # Freenode server pings bot every so often
+                                pass
+                            elif "." in word:  # look for 'words' with a '.' in the middle
+                                if "@" not in word:  # ignore emails
+                                    if "meme" not in word:
+                                        title = get_page_title(word)
+                                        if title:
+                                            send_message(str(title))
+                except Exception, error:
+                    print "Something went wrong in website title:"
+                    print error
+                # end of website url block
+
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
-                    subreddit_regex = re.findall("r/([a-z0-9]+)(/comments/([a-z0-9_]+))?", message, flags=re.IGNORECASE)
-                    if subreddit_regex:  # if this is true, we found a subreddit name
+                    subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
+                                                 flags=re.IGNORECASE)
+
+                    # if this is true, we found a subreddit name
+                    if subreddit_regex and not website:
                         for result in subreddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
@@ -334,30 +406,7 @@ def commands(server_message):
                 except Exception, error:
                     print "Something went wrong in reddit block:"
                     print error
-
-                # ~~~~~~~~ WEBSITE TITLES
-                try:
-                    # search for websites
-                    url_regex = re.findall("(www.)?[a-zA-Z0-9\-]+\.[a-z]{2,3}", message, flags=re.IGNORECASE)
-                    # here, we're just seeing if the message even contains a url, not concerned with whole url yet
-                    if url_regex:  # if this is true, the message has a url in it
-                        for word in message.split():
-                            # get rid of trailing commas or periods (ie end of sentence)
-                            word = word.strip(',').strip('.')
-                            if ("reddit" in word) or ("twitch" in word) or ("youtube" in word)\
-                                    or ("youtu.be" in word) or ("freenode" in word):
-                                # reddit, twitch, and youtube stuff is already being taken care of
-                                # no need to get it here
-                                # Freenode server pings bot every so often
-                                pass
-                            elif "." in word:  # look for 'words' with a '.' in the middle
-                                if "@" not in word:  # ignore emails
-                                    title = get_page_title(word)
-                                    if title:
-                                        send_message(str(title))
-                except Exception, error:
-                    print "Something went wrong in website title:"
-                    print error
+                # end of reddit block
 
                 # ~~~~~~~~ YOUTUBE
                 try:
@@ -406,19 +455,22 @@ def commands(server_message):
                 except Exception, error:
                     print "Something went wrong in twitch in racerbot"
                     print error
+                # end of Twitch block
+            # end of nospoil block
             # </editor-fold desc="regex stuff">
 
             # ~~~~~~~~ QUOTES
-            try:
-                irc_quotes.add_last_message(user, message)  # add message to latest messages
-            except Exception, error:
-                print "Something went wrong in quotes"
-                print error
+            if not testing:
+                try:
+                    irc_quotes.add_last_message(user, message)  # add message to latest messages
+                except Exception, error:
+                    print "Something went wrong in quotes"
+                    print error
 
             # end of "if joined:"
     except Exception, error:
         print "Error in commands():"
-        print error
+        print traceback.format_exc(error)
 # </editor-fold desc="Commands">
 
 # <editor-fold desc="Bot">
@@ -432,24 +484,72 @@ print "Assigning name"
 
 join_chan(channel)  # initial channel join
 
-while True:  # this is the actual bot itself, everything in this block is what the bot uses
-    irc_message = ircsock.recv(2048)  # receive data from server
-    irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
+while True:
+    while True:  # this is the actual bot itself, everything in this block is what the bot uses
+        try:
+            irc_message = ircsock.recv(2048)  # receive data from server
+            irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
-    twitch_check()
-    try:
-        # not sure if making this an if/elif block is a good idea, time will tell I suppose
-        if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
-            print irc_message
-            ping()
-        elif "/NAMES" in irc_message:
-            print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
-            joined = True  # we've joined the channel
-            fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
-            twitch.joined = True
-        elif irc_message.find(' PRIVMSG '):
-            commands(irc_message)
-    except Exception, e:
-        print "Uncaught Error in while True loop"
-        print e
+            with open(log_file_name, 'a') as log_file:  # open log file in append mode
+                log_file.write(irc_message)  # write to log file
+
+            twitch_check()  # check if it's time to update twitch
+
+            try:
+                # user list creation
+                if not joined:
+                    names_list_check = "%s = %s :" % (botnick, channel)  # find NAMES line
+                    if names_list_check in irc_message:
+                        names_list = irc_message.split(" :")[1].split("\r")[0].split(' ')
+                        for name in names_list:
+                            user_list.append(name.strip("@"))  # add user to user list
+                            if name.startswith("@"):  # if user is an op (denoted by @)
+                                ops_list.append(name.strip("@"))  # add them to op list
+
+                # not sure if making this an if/elif block is a good idea, time will tell I suppose
+                if irc_message.find("PING :") != -1:  # don't want to be rude, respond to servers pings
+                    if testing:
+                        print irc_message
+
+                    ping()
+                elif "/NAMES" in irc_message:
+                    print "~~~~~~~~~~~~~~~~~~~~~~~ I'm in! ~~~~~~~~~~~~~~~~~~~~~~~"
+                    joined = True  # we've joined the channel
+                    fishify.fish_clock = calendar.timegm(time.gmtime()) - 300
+                    twitch.joined = True
+                elif "PART" in irc_message:
+                    user = irc_message.split('!')[0].strip(':')
+                    try:
+                        user_list.remove(user)
+                        ops_list.remove(user)
+                    except:
+                        pass  # do nothing, user is not an op
+                elif "KICK" in irc_message:
+                    user = irc_message.split(' ')[3]
+                    try:
+                        user_list.remove(user)
+                        ops_list.remove(user)
+                    except:
+                        pass  # do nothing, user is not an op
+                elif "JOIN" in irc_message:
+                    user = irc_message.split('!')[0].strip(':')
+                    user_list.append(user)
+                elif "MODE" in irc_message:
+                    if "+o" in irc_message:
+                        oped_user = irc_message.split(" ")[4]
+                        ops_list.append(oped_user)
+                    elif "-o" in irc_message:
+                        user = irc_message.split(" ")[4]
+                        ops_list.remove(user)
+                elif irc_message.find(' PRIVMSG '):
+                    commands(irc_message)
+            except Exception, e:
+                print "Uncaught Error in while True loop"
+                print e
+        except Exception, error:
+            print "Error with server connection"
+            print error
+
+    print "Attempting reconnect in 15 seconds..."
+    time.sleep(15)
 # </editor-fold desc="Bot">

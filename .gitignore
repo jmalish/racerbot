@@ -2,3 +2,4 @@
 pysecrets.json
 *.pyc
 streamers.json
+*.log
