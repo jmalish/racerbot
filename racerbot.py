@@ -381,7 +381,7 @@ def commands(server_message):
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
-                    ''' old regex 
+                    ''' old regex
                     subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
                     '''
