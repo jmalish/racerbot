@@ -381,8 +381,14 @@ def commands(server_message):
                 # ~~~~~~~~ REDDIT
                 try:
                     # search for subreddits (r/example)
+                    ''' old regex
                     subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
+                    '''
+
+                    subreddit_regex = re.findall("([a-z0-9_]{1,20})?(\/comments\/)([a-z0-9]{6})", message, 
+                        flags=re.IGNORECASE)
+
 
                     # if this is true, we found a subreddit name
                     if subreddit_regex and not website:
