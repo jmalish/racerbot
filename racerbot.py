@@ -382,17 +382,16 @@ def commands(server_message):
                 try:
                     # search for subreddits (r/example)
                     ''' old regex  
-                    subreddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
+                    reddit_regex = re.findall("r\/([a-z0-9_]+)(\/comments\/([a-z0-9_]+))?", message,
                                                  flags=re.IGNORECASE)
                     '''
 
-                    subreddit_regex = re.findall("([a-z0-9_]{1,20})?(\/comments\/)([a-z0-9]{6})", message, 
-                        flags=re.IGNORECASE)
-
+                    reddit_regex = re.findall("([a-z0-9_]{1,20})?(\/comments\/)([a-z0-9]{6})", message,
+                                              flags=re.IGNORECASE)
 
                     # if this is true, we found a subreddit name
-                    if subreddit_regex and not website:
-                        for result in subreddit_regex:
+                    if reddit_regex and not website:
+                        for result in reddit_regex:
                             if result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
                                 try:
@@ -409,6 +408,19 @@ def commands(server_message):
                                     send_message("http://www.reddit.com/r/%s - That's not a real subreddit..." %
                                                  subreddit_name)
                                     print error
+
+                    subreddit_regex = re.findall("\br\/([A-z_0-9]*)\b", message)
+
+                    if subreddit_regex:
+                        for result in subreddit_regex:
+                            subreddit_name = result[0]  # get subreddit name from regex group 1
+                            try:
+                                subreddit_title = reddit.get_subreddit(subreddit_name).title
+                                send_message("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
+                            except Exception as error:
+                                send_message("http://www.reddit.com/r/%s - That's not a real subreddit..." %
+                                             subreddit_name)
+                                print error
                 except Exception, error:
                     print "Something went wrong in reddit block:"
                     print error
