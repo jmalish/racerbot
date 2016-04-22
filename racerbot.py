@@ -411,7 +411,7 @@ def commands(server_message):
 
                     subreddit_regex = re.findall(r"\br\/([A-z_0-9]*\b)", message)
 
-                    if subreddit_regex:
+                    if subreddit_regex and not reddit_regex:
                         for result in subreddit_regex:
                             subreddit_name = result  # get subreddit name from regex group 1
                             try:
