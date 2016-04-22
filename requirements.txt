@@ -1,4 +1,4 @@
-praw == 3.3.0
+praw == 3.4.0
 requests == 2.8.1
 beautifulsoup4 == 4.4.1
 cleverbot == 0.1.5

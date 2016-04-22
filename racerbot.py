@@ -386,27 +386,26 @@ def commands(server_message):
                                                  flags=re.IGNORECASE)
                     '''
 
-                    reddit_regex = re.findall("([a-z0-9_]{1,20})?(\/comments\/)([a-z0-9]{6})", message,
-                                              flags=re.IGNORECASE)
+                    reddit_regex = \
+                        re.findall("([A-z_0-9]*)?(\/comments\/)([A-z_0-9]{6})(\/[A-z_0-9]*)?(\/([A-z_0-9]{7}))?",
+                                   message, flags=re.IGNORECASE)
 
                     # if this is true, we found a subreddit name
                     if reddit_regex and not website:
                         for result in reddit_regex:
-                            if result[1]:  # if result[1] has something in it, that means we have a comments link
+                            if result[5]:  # if result[5] has something in it, that means we have a comment
+                                try:
+                                    reddit_link = "https://www.reddit.com/comments/%s/_/%s" % (result[2], result[5])
+                                    submission = reddit.get_submission(reddit_link)
+                                    print "%s commented on %s" % (submission.comments[0].author, submission.title)
+                                except Exception as error:
+                                    print error
+                            elif result[1]:  # if result[1] has something in it, that means we have a comments link
                                 thread_id = result[2]  # get thread ID from regex group 3
                                 try:
                                     thread_info = reddit.get_submission(submission_id=thread_id)
                                     send_message(str(thread_info.title) + " | " + str(thread_info.subreddit))
                                 except Exception as error:
-                                    print error
-                            else:  # if not, it's just a subreddit
-                                subreddit_name = result[0]  # get subreddit name from regex group 1
-                                try:
-                                    subreddit_title = reddit.get_subreddit(subreddit_name).title
-                                    send_message("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
-                                except Exception as error:
-                                    send_message("http://www.reddit.com/r/%s - That's not a real subreddit..." %
-                                                 subreddit_name)
                                     print error
 
                     subreddit_regex = re.findall("\br\/([A-z_0-9]*)\b", message)
