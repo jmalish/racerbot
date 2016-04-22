@@ -397,7 +397,8 @@ def commands(server_message):
                                 try:
                                     reddit_link = "https://www.reddit.com/comments/%s/_/%s" % (result[2], result[5])
                                     submission = reddit.get_submission(reddit_link)
-                                    print "%s commented on %s" % (submission.comments[0].author, submission.title)
+                                    send_message("%s commented on %s" %
+                                                 (submission.comments[0].author, submission.title))
                                 except Exception as error:
                                     print error
                             elif result[1]:  # if result[1] has something in it, that means we have a comments link
