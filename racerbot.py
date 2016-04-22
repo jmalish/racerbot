@@ -409,17 +409,17 @@ def commands(server_message):
                                 except Exception as error:
                                     print error
 
-                    subreddit_regex = re.findall("\br\/([A-z_0-9]*)\b", message)
+                    subreddit_regex = re.findall(r"\br\/([A-z_0-9]*\b)", message)
 
                     if subreddit_regex:
                         for result in subreddit_regex:
-                            subreddit_name = result[0]  # get subreddit name from regex group 1
+                            subreddit_name = result  # get subreddit name from regex group 1
                             try:
-                                subreddit_title = reddit.get_subreddit(subreddit_name).title
+                                subreddit_title = reddit.get_subreddit(subreddit_name)
                                 send_message("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
                             except Exception as error:
                                 send_message("http://www.reddit.com/r/%s - That's not a real subreddit..." %
-                                             subreddit_name)
+                                      subreddit_name)
                                 print error
                 except Exception, error:
                     print "Something went wrong in reddit block:"
