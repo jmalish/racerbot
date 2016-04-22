@@ -12,7 +12,7 @@ if subreddit_regex:
         subreddit_name = result  # get subreddit name from regex group 1
         try:
             subreddit_title = reddit.get_subreddit(subreddit_name)
-            print("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title))
+            print("http://www.reddit.com/r/%s - %s" % (subreddit_name, subreddit_title.title))
         except Exception as error:
             print("http://www.reddit.com/r/%s - That's not a real subreddit..." %
                          subreddit_name)
