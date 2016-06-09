@@ -510,7 +510,7 @@ while True:
             irc_message = irc_message.strip('\n\r')  # strip any unnecessary line breaks
 
             with open(log_file_name, 'a') as log_file:  # open log file in append mode
-                log_file.write(irc_message)  # write to log file
+                log_file.write(irc_message + "\n")  # write to log file
 
             twitch_check()  # check if it's time to update twitch
 
